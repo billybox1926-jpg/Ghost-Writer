@@ -1,9 +1,42 @@
+import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
 import { clamp, evaluateTrueNameAttempt, getRibbonDrop } from './semantic-rules.js';
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
 
 const keys = new Set();
+
+const inspectables = [
+  {
+    id: 'receipt',
+    title: 'Rain-blurred receipt',
+    journal: 'Receipt: coal-black ink circles the name MALLORY VALE.',
+    message: 'You inspect the receipt. Ink blooms into a True Name: MALLORY VALE.',
+    x: 396,
+    y: 332,
+    range: 54,
+    revealsTrueName: true
+  },
+  {
+    id: 'typewriter',
+    title: 'Haunted typewriter',
+    journal: 'Typewriter: the E key sticks, as if begging to examine the room.',
+    message: 'The typewriter chatters: clues must be read, not bumped into.',
+    x: 146,
+    y: 350,
+    range: 62
+  },
+  {
+    id: 'door',
+    title: 'Locked alley door',
+    journal: 'Door: wet scratches spell OPEN beneath the handle.',
+    message: 'The locked door shivers. A command word hides in the wood: OPEN.',
+    x: 858,
+    y: 330,
+    range: 64
+  }
+];
+
 const commands = {
   BURN: 'The ghost flares like wet newspaper in a furnace.',
   BIND: 'Invisible string cinches the ghost into a ledger.',
@@ -19,6 +52,7 @@ const initialState = () => ({
   ribbon: 100,
   hardboiled: false,
   clueFound: false,
+  discoveredClueIds: [],
   doorOpen: false,
   ghost: {
     x: 690,
@@ -96,6 +130,28 @@ function mutateGhost() {
   burst(g.x, g.y, 14 + g.mutationLevel * 8);
 }
 
+function getNearbyInspectable() {
+  return findInspectableInRange(state.player, inspectables);
+}
+
+function inspectNearby() {
+  const inspectable = getNearbyInspectable();
+
+  if (!inspectable) {
+    state.message = 'Nothing nearby answers the ribbon. Step closer to paper, ink, or wood.';
+    return false;
+  }
+
+  const alreadyDiscovered = state.discoveredClueIds.includes(inspectable.id);
+  state.discoveredClueIds = discoverClue(state.discoveredClueIds, inspectable.id);
+  if (inspectable.revealsTrueName) state.clueFound = true;
+  state.message = alreadyDiscovered
+    ? `${inspectable.title}: already copied into the journal.`
+    : inspectable.message;
+  triggerScreenShake(alreadyDiscovered ? 2 : 4, 120);
+  return true;
+}
+
 function commitWord() {
   const word = state.typed.trim().toUpperCase();
   state.typed = '';
@@ -150,12 +206,6 @@ function update(deltaTime) {
   const dy = Number(keys.has('ArrowDown') || keys.has('s')) - Number(keys.has('ArrowUp') || keys.has('w'));
   p.x = clamp(p.x + dx * p.speed, 42, canvas.width - 42);
   p.y = clamp(p.y + dy * p.speed, 210, canvas.height - 92);
-
-  const clue = { x: 392, y: 332 };
-  if (!state.clueFound && distance(p, clue) < 48) {
-    state.clueFound = true;
-    state.message = 'Ink blooms on a receipt: MALLORY VALE. A True Name?';
-  }
 
   if (state.ghost.active) {
     const g = state.ghost;
@@ -231,6 +281,8 @@ function drawCity() {
 }
 
 function drawSceneObjects() {
+  const nearbyInspectable = getNearbyInspectable();
+
   ctx.fillStyle = state.doorOpen ? '#15271d' : '#21170f';
   ctx.fillRect(830, 254, 56, 130);
   drawPixelText(state.doorOpen ? 'OPEN' : 'LOCKED', 820, 242, 14, '#f2b35f');
@@ -246,6 +298,21 @@ function drawSceneObjects() {
   ctx.fillStyle = '#101010';
   ctx.fillRect(116, 323, 58, 28);
   drawPixelText('TYPEWRITER', 81, 314, 13, '#f2b35f');
+
+  for (const inspectable of inspectables) {
+    const discovered = state.discoveredClueIds.includes(inspectable.id);
+    const isNearby = nearbyInspectable?.id === inspectable.id;
+    ctx.strokeStyle = isNearby ? '#8cffc1' : (discovered ? 'rgba(242, 179, 95, 0.55)' : 'rgba(215, 199, 161, 0.2)');
+    ctx.lineWidth = isNearby ? 2 : 1;
+    ctx.beginPath();
+    ctx.arc(inspectable.x, inspectable.y, isNearby ? 18 : 12, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (isNearby) {
+      drawPixelText('E / Enter: inspect', inspectable.x - 54, inspectable.y - 28, 14, '#8cffc1');
+    }
+  }
+  ctx.lineWidth = 1;
 }
 
 function drawPlayer() {
@@ -312,14 +379,25 @@ function drawParticles() {
 
 function drawHud() {
   ctx.fillStyle = 'rgba(5, 6, 7, 0.82)';
-  ctx.fillRect(18, 18, canvas.width - 36, 124);
+  ctx.fillRect(18, 18, canvas.width - 36, 188);
   ctx.strokeStyle = 'rgba(215, 199, 161, 0.25)';
-  ctx.strokeRect(18, 18, canvas.width - 36, 124);
+  ctx.strokeRect(18, 18, canvas.width - 36, 188);
 
   drawPixelText(`Ribbon: ${Math.ceil(state.ribbon)}%`, 36, 52, 20, state.ribbon < 25 ? '#9d2832' : '#f2b35f');
   drawPixelText(`Hardboiled Mode: ${state.hardboiled ? 'ON' : 'OFF'}`, 220, 52, 20, '#d7c7a1');
   drawPixelText(`Typed: ${state.typed || '_'}`, 36, 88, 22, '#8cffc1');
   drawPixelText(state.message, 36, 120, 18, '#d7c7a1');
+
+  const discoveredClues = getDiscoveredClues(inspectables, state.discoveredClueIds);
+  drawPixelText('Journal:', 36, 150, 16, '#f2b35f');
+  if (!discoveredClues.length) {
+    drawPixelText('No clues copied yet', 112, 150, 16, '#d7c7a1');
+    return;
+  }
+
+  discoveredClues.slice(-3).forEach((clue, index) => {
+    drawPixelText(`• ${clue.journal}`, 112, 150 + index * 18, 15, '#d7c7a1');
+  });
 }
 
 let previousFrameTime = performance.now();
@@ -350,8 +428,13 @@ window.addEventListener('keydown', (event) => {
   }
 
   if (key === 'Enter') {
+    if (!state.typed.trim() && inspectNearby()) return;
     commitWord();
     return;
+  }
+
+  if ((key === 'e' || key === 'E') && !state.typed) {
+    if (inspectNearby()) return;
   }
 
   if (key === 'Backspace') {

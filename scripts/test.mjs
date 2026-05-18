@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
 import { evaluateTrueNameAttempt, getRibbonDrop } from '../src/semantic-rules.js';
 
 const trueName = 'MALLORY VALE';
@@ -51,4 +52,40 @@ assert.deepEqual(
   'dropRibbon helper should not report a drop when already empty'
 );
 
-console.log('Semantic rules tests passed. The True Name holds.');
+
+const inspectables = [
+  { id: 'receipt', title: 'Rain-blurred receipt', x: 100, y: 100, range: 24 },
+  { id: 'door', title: 'Locked alley door', x: 260, y: 100, range: 40 }
+];
+
+assert.equal(
+  findInspectableInRange({ x: 108, y: 100 }, inspectables)?.id,
+  'receipt',
+  'nearby player should be able to inspect the closest in-range clue'
+);
+
+assert.equal(
+  findInspectableInRange({ x: 180, y: 100 }, inspectables),
+  null,
+  'distant player should not inspect clues out of range'
+);
+
+assert.deepEqual(
+  discoverClue(['receipt'], 'door'),
+  ['receipt', 'door'],
+  'journal helper should append newly discovered clues'
+);
+
+assert.deepEqual(
+  discoverClue(['receipt'], 'receipt'),
+  ['receipt'],
+  'journal helper should keep discovered clues unique during a run'
+);
+
+assert.deepEqual(
+  getDiscoveredClues(inspectables, ['door', 'missing', 'receipt']).map((clue) => clue.id),
+  ['door', 'receipt'],
+  'journal helper should resolve discovered clue ids and ignore stale ids'
+);
+
+console.log('Semantic rules and clue journal tests passed. The True Name holds.');

@@ -20,7 +20,8 @@ The first version is a tiny HTML5 Canvas scene with:
 - Semantic command words
 - True Name ghost banishment
 - misspelled True Name ghost mutation
-- paper/ink/wood clue interactions
+- inspectable paper/ink/wood clues
+- current-run journal entries for discovered clues
 - a noir city presentation layer
 
 ## Run locally
@@ -47,7 +48,8 @@ The smoke test checks that the core files exist and contain the expected prototy
 
 - Arrow keys or WASD: move the detective
 - Letter keys: type into the haunted typewriter
-- Enter: commit the typed word
+- Enter: commit the typed word, or inspect if the typewriter line is empty and you are near a clue
+- E: inspect a nearby clue when the typewriter line is empty
 - Backspace: erase one character, unless Hardboiled Mode is enabled
 - H: toggle Hardboiled Mode
 - R: restart the prototype
@@ -63,6 +65,7 @@ The smoke test checks that the core files exist and contain the expected prototy
 │   ├── dev-server.mjs
 │   └── smoke-test.mjs
 ├── src/
+│   ├── clue-journal.js
 │   ├── main.js
 │   └── styles.css
 ├── index.html
