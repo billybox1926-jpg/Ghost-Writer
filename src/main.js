@@ -1,3 +1,4 @@
+import { firstCasePhases, getFirstCaseObjective, getFirstCasePhase } from './case-flow.js';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from './screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, normalizeCommittedWord } from './input-rules.js';
@@ -14,8 +15,8 @@ const inspectables = [
   {
     id: 'receipt',
     title: 'Rain-blurred receipt',
-    journal: 'Receipt: coal-black ink circles the name MALLORY VALE.',
-    message: 'You inspect the receipt. Ink blooms into a True Name: MALLORY VALE.',
+    journal: 'Receipt: Eddie Pike paid for one midnight fare to Mallory Vale and the locked alley door.',
+    message: 'The receipt is Eddie Pike's fare slip. Ink blooms: Mallory Vale rode to the locked alley door.',
     x: 396,
     y: 332,
     range: 54,
@@ -33,8 +34,8 @@ const inspectables = [
   {
     id: 'door',
     title: 'Locked alley door',
-    journal: 'Door: wet scratches spell OPEN beneath the handle.',
-    message: 'The locked door shivers. A command word hides in the wood: OPEN.',
+    journal: 'Door: fresh scratches match Mallory's nails; the wood is waiting for OPEN.',
+    message: 'The locked door smells of rain, roses, and burned newsprint. Eddie knows the word it obeys.',
     x: 858,
     y: 330,
     range: 64
@@ -42,31 +43,45 @@ const inspectables = [
   {
     id: 'witness',
     title: 'Raincoat witness',
-    journal: 'Witness: Eddie Pike flinches at the words FORGET, REMEMBER, and ACCUSE.',
-    message: 'Eddie Pike whispers: type FORGET, REMEMBER, or ACCUSE while I can hear it.',
+    journal: 'Witness: Eddie Pike carried Mallory's receipt and flinches at FORGET, REMEMBER, and ACCUSE.',
+    message: 'Eddie Pike hides under his raincoat. Type FORGET, REMEMBER, or ACCUSE while he can hear it.',
     x: 562,
     y: 348,
     range: 68
   }
 ];
 
+const caseJournalEntries = [
+  {
+    id: 'door-open',
+    journal: 'Door opened: Eddie's hidden word exposes the room where Mallory Vale died.'
+  },
+  {
+    id: 'ending-lead',
+    journal: 'Lead: Mallory leaves a printer's devil mark from the Black Ribbon Press.'
+  }
+];
+
+const journalItems = [...inspectables, ...caseJournalEntries];
+
 const commands = {
   BURN: 'The ghost flares like wet newspaper in a furnace.',
   BIND: 'Invisible string cinches the ghost into a ledger.',
   LIE: 'A false obituary peels away from the page and draws its eyes.',
-  OPEN: 'The locked alley door remembers it was never closed.',
+  OPEN: 'The locked alley door remembers Eddie's fare slip and swings onto Mallory Vale's last room.',
   FORGET: 'A witness loses a minute. The rain keeps the secret.'
 };
 
 const initialState = () => ({
   player: { x: 140, y: 340, speed: 2.2 },
   typed: '',
-  message: 'Find the True Name. Paper, ink, and wood will talk.',
+  message: 'Case one: Mallory Vale vanished after Eddie Pike drove her to a locked alley door.',
   ribbon: 100,
   hardboiled: false,
   clueFound: false,
   discoveredClueIds: [],
   doorOpen: false,
+  casePhase: firstCasePhases.BEGINNING,
   witness: {
     x: 562,
     y: 348,
@@ -129,6 +144,15 @@ function isNearWitness() {
   return distance(state.player, state.witness) <= 92;
 }
 
+function updateCasePhase() {
+  state.casePhase = getFirstCasePhase({
+    discoveredClueIds: state.discoveredClueIds,
+    witnessMemoryState: state.witness.memoryState,
+    doorOpen: state.doorOpen,
+    ghostActive: state.ghost.active
+  });
+}
+
 function applyWitnessCommand(word) {
   const result = getWitnessCommandResult(state.witness.memoryState, word, isNearWitness());
 
@@ -149,13 +173,13 @@ function applyWitnessCommand(word) {
   if (result.kind === 'changed') {
     state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'witness');
     if (result.memoryState === 'truthful') state.clueFound = true;
-    if (result.memoryState === 'cornered') state.doorOpen = true;
     triggerScreenShake(6, 180);
     burst(state.witness.x, state.witness.y - 36, 18);
   } else {
     triggerScreenShake(3, 120);
   }
 
+  updateCasePhase();
   return true;
 }
 
@@ -174,6 +198,7 @@ function inspectNearby() {
     ? `${inspectable.title}: already copied into the journal.`
     : inspectable.message;
   triggerScreenShake(alreadyDiscovered ? 2 : 4, 120);
+  updateCasePhase();
   return true;
 }
 
@@ -184,8 +209,16 @@ function commitWord() {
   if (!word) return;
 
   if (evaluateTrueNameAttempt(word, state.ghost.name) === 'exact' && state.ghost.active) {
+    if (!state.doorOpen) {
+      state.message = 'Mallory hears her name through the locked door, but the sealed room keeps its confession. Find Eddie's door word.';
+      triggerScreenShake(5, 160);
+      return;
+    }
+
     state.ghost.active = false;
-    state.message = 'True Name accepted. The dead thing folds into punctuation.';
+    state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'ending-lead');
+    state.message = 'True Name accepted. Mallory Vale points through the open door: Black Ribbon Press hired the killer.';
+    updateCasePhase();
     burst(state.ghost.x, state.ghost.y, 42);
     return;
   }
@@ -200,9 +233,19 @@ function commitWord() {
   }
 
   if (commands[word]) {
+    if (word === 'OPEN' && state.witness.memoryState !== 'cornered') {
+      state.message = 'OPEN rattles the lock, but Eddie still owns the missing confession. ACCUSE him first.';
+      triggerScreenShake(4, 140);
+      return;
+    }
+
     state.message = commands[word];
     triggerScreenShake(7, 220);
-    if (word === 'OPEN') state.doorOpen = true;
+    if (word === 'OPEN') {
+      state.doorOpen = true;
+      state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'door-open');
+      updateCasePhase();
+    }
     if (state.ghost.active && ['BURN', 'BIND', 'LIE'].includes(word)) {
       dropRibbon(6, 8);
       state.ghost.angry = word === 'BURN';
@@ -446,16 +489,17 @@ function drawHud() {
   drawPixelText(`Witness: ${state.witness.memoryLabel}`, 520, 52, 20, state.witness.edited ? '#f2b35f' : '#d7c7a1');
   drawPixelText(`Typed: ${state.typed || '_'}`, 36, 88, 22, '#8cffc1');
   drawPixelText(state.message, 36, 120, 18, '#d7c7a1');
+  drawPixelText(getFirstCaseObjective(state.casePhase), 36, 146, 15, '#8cffc1');
 
-  const discoveredClues = getDiscoveredClues(inspectables, state.discoveredClueIds);
-  drawPixelText('Journal:', 36, 150, 16, '#f2b35f');
+  const discoveredClues = getDiscoveredClues(journalItems, state.discoveredClueIds);
+  drawPixelText('Journal:', 36, 172, 16, '#f2b35f');
   if (!discoveredClues.length) {
-    drawPixelText('No clues copied yet', 112, 150, 16, '#d7c7a1');
+    drawPixelText('No clues copied yet', 112, 172, 16, '#d7c7a1');
     return;
   }
 
-  discoveredClues.slice(-3).forEach((clue, index) => {
-    drawPixelText(`• ${clue.journal}`, 112, 150 + index * 18, 15, '#d7c7a1');
+  discoveredClues.slice(-2).forEach((clue, index) => {
+    drawPixelText(`• ${clue.journal}`, 112, 172 + index * 18, 15, '#d7c7a1');
   });
 }
 
@@ -463,7 +507,7 @@ function drawHud() {
 function updateStatusPanel() {
   if (!statusPanel) return;
 
-  const discoveredClues = getDiscoveredClues(inspectables, state.discoveredClueIds);
+  const discoveredClues = getDiscoveredClues(journalItems, state.discoveredClueIds);
   const journalSummary = discoveredClues.length
     ? discoveredClues.slice(-3).map((clue) => clue.journal).join(' ')
     : 'No clues copied yet.';
@@ -473,6 +517,7 @@ function updateStatusPanel() {
     `Ribbon ${Math.ceil(state.ribbon)} percent.`,
     `Hardboiled Mode ${state.hardboiled ? 'on' : 'off'}.`,
     `Witness ${state.witness.memoryLabel}.`,
+    getFirstCaseObjective(state.casePhase),
     typedSummary,
     state.message,
     journalSummary

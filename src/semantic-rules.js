@@ -78,20 +78,20 @@ export const witnessCommandStates = {
   FORGET: {
     state: 'forgotten',
     label: 'FORGOTTEN',
-    message: 'Eddie Pike forgets the last minute. His cigarette falls through his fingers.',
-    journal: 'Witness: FORGET makes Eddie lose the minute after Mallory died.'
+    message: 'Eddie Pike forgets the fare on the receipt, but the locked alley door still stains his sleeve.',
+    journal: "Witness: FORGET blurs Eddie's fare, leaving only Mallory's door in his panic."
   },
   REMEMBER: {
     state: 'truthful',
     label: 'REMEMBERED',
-    message: 'Eddie Pike remembers the receipt, the alley door, and Mallory Vale.',
-    journal: 'Witness: REMEMBER pins the receipt to Mallory Vale and the alley door.'
+    message: 'Eddie Pike remembers Mallory Vale pressing the receipt into his palm at the locked alley door.',
+    journal: "Witness: REMEMBER pins Eddie's receipt to Mallory Vale and the locked alley door."
   },
   ACCUSE: {
     state: 'cornered',
     label: 'CORNERED',
-    message: 'Eddie Pike breaks. He rasps that the door only listens to OPEN.',
-    journal: 'Witness: ACCUSE corners Eddie into giving up the OPEN command.'
+    message: 'Eddie Pike breaks. Black Ribbon Press paid him, and the door only listens to OPEN.',
+    journal: 'Witness: ACCUSE ties Eddie to Black Ribbon Press and gives up OPEN.'
   }
 };
 
