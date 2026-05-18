@@ -21,21 +21,31 @@
       aria-roledescription="keyboard game"
       tabindex="0"
       aria-label="Ghost Writer prototype canvas"
-      aria-describedby="controls-help game-status"
+      aria-describedby="controls-help first-run-guide game-status"
     >
-      Ghost Writer is a keyboard-controlled canvas game. Move with arrow keys, type command words, inspect clues with empty-line Enter, toggle generated audio with the Audio button, restart with empty-line Escape, and toggle Hardboiled Mode with empty-line F2.
+      Ghost Writer is a keyboard-controlled canvas game. Arrow keys move only when the typed line is empty. Letters and spaces type into the haunted typewriter. Enter inspects on an empty line or commits typed words. Escape clears typed text first, then restarts on an empty line. Empty-line F2 toggles Hardboiled Mode. Generated audio uses the on-screen Audio button.
     </canvas>
     <section id="game-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true">
-      Ribbon 100 percent. Hardboiled Mode off. Witness guarded. No letters typed. Find the True Name. Paper, ink, and wood will talk.
+      Ribbon 100 percent. Hardboiled Mode off. Witness guarded. No letters typed. Arrow keys move on an empty line. Empty Enter inspects nearby clues. Type REMEMBER and ACCUSE near Eddie, then OPEN the door and type MALLORY VALE.
     </section>
     <section id="controls-help" class="hud-help" aria-label="Keyboard controls">
-      <p><strong>Move:</strong> Arrow keys on an empty typed line</p>
-      <p><strong>Type:</strong> letters, Enter to commit</p>
-      <p><strong>Inspect:</strong> Empty Enter near a clue</p>
-      <p><strong>Toggle:</strong> Empty-line F2 for Hardboiled Mode</p>
+      <p><strong>Move:</strong> Arrow keys only when the typed line is empty</p>
+      <p><strong>Type:</strong> letters and spaces write commands</p>
+      <p><strong>Enter:</strong> empty line inspects; typed line commits</p>
+      <p><strong>Escape:</strong> clears typed text first; empty line restarts</p>
+      <p><strong>F2:</strong> toggles Hardboiled Mode only on an empty line</p>
       <p><strong>Audio:</strong> <button id="audio-toggle" class="audio-toggle" type="button" aria-pressed="true">Audio: On</button></p>
-      <p><strong>Restart:</strong> Empty-line Esc</p>
     </section>
+    <details id="first-run-guide" class="case-guide" open>
+      <summary>First-run case notes</summary>
+      <ul>
+        <li>Keep the typed line empty to walk with the arrow keys. If letters are showing, press Escape once to clear them.</li>
+        <li>With an empty line, press Enter near paper, ink, wood, or Eddie to inspect and copy clues into the journal.</li>
+        <li>Start with the rain-blurred receipt, then inspect Eddie Pike. Stand close to Eddie and type <code>REMEMBER</code>, Enter, then <code>ACCUSE</code>, Enter.</li>
+        <li>After Eddie gives up the door word, type <code>OPEN</code>, Enter, then finish the case with <code>MALLORY VALE</code>, Enter.</li>
+        <li>Use the on-screen Audio button for generated sound; no letter key toggles audio.</li>
+      </ul>
+    </details>
   </main>
   <script type="module" src="src/main.js"></script>
 </body>
