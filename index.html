@@ -13,13 +13,27 @@
       <h1>Ghost Writer</h1>
       <p>A haunted typewriter noir adventure prototype.</p>
     </section>
-    <canvas id="game" width="960" height="540" aria-label="Ghost Writer prototype canvas"></canvas>
-    <section class="hud-help">
+    <canvas
+      id="game"
+      width="960"
+      height="540"
+      role="application"
+      aria-roledescription="keyboard game"
+      tabindex="0"
+      aria-label="Ghost Writer prototype canvas"
+      aria-describedby="controls-help game-status"
+    >
+      Ghost Writer is a keyboard-controlled canvas game. Move with WASD or arrow keys, type command words, inspect clues with E or Enter, restart with Escape, and toggle Hardboiled Mode with F2.
+    </canvas>
+    <section id="game-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      Ribbon 100 percent. Hardboiled Mode off. Witness guarded. No letters typed. Find the True Name. Paper, ink, and wood will talk.
+    </section>
+    <section id="controls-help" class="hud-help" aria-label="Keyboard controls">
       <p><strong>Move:</strong> WASD / Arrows</p>
       <p><strong>Type:</strong> letters, Enter to commit</p>
       <p><strong>Inspect:</strong> E or empty Enter near a clue</p>
-      <p><strong>Toggle:</strong> H for Hardboiled Mode</p>
-      <p><strong>Restart:</strong> R</p>
+      <p><strong>Toggle:</strong> F2 for Hardboiled Mode</p>
+      <p><strong>Restart:</strong> Esc</p>
     </section>
   </main>
   <script type="module" src="src/main.js"></script>

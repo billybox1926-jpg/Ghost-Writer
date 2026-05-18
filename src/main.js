@@ -1,11 +1,14 @@
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from './screen-shake.js';
+import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, normalizeCommittedWord } from './input-rules.js';
 import { clamp, evaluateTrueNameAttempt, getRibbonDrop, getWitnessCommandResult } from './semantic-rules.js';
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
 
-const keys = new Set();
+const activeMovementCodes = new Set();
+const statusPanel = document.querySelector('#game-status');
+let previousStatusText = statusPanel?.textContent.trim() ?? '';
 
 const inspectables = [
   {
@@ -175,7 +178,7 @@ function inspectNearby() {
 }
 
 function commitWord() {
-  const word = state.typed.trim().toUpperCase();
+  const word = normalizeCommittedWord(state.typed);
   state.typed = '';
 
   if (!word) return;
@@ -228,8 +231,7 @@ function update(deltaTime) {
   updateScreenShake(deltaTime);
 
   const p = state.player;
-  const dx = Number(keys.has('ArrowRight') || keys.has('d')) - Number(keys.has('ArrowLeft') || keys.has('a'));
-  const dy = Number(keys.has('ArrowDown') || keys.has('s')) - Number(keys.has('ArrowUp') || keys.has('w'));
+  const { dx, dy } = getMovementAxis(activeMovementCodes);
   p.x = clamp(p.x + dx * p.speed, 42, canvas.width - 42);
   p.y = clamp(p.y + dy * p.speed, 210, canvas.height - 92);
 
@@ -457,6 +459,31 @@ function drawHud() {
   });
 }
 
+
+function updateStatusPanel() {
+  if (!statusPanel) return;
+
+  const discoveredClues = getDiscoveredClues(inspectables, state.discoveredClueIds);
+  const journalSummary = discoveredClues.length
+    ? discoveredClues.slice(-3).map((clue) => clue.journal).join(' ')
+    : 'No clues copied yet.';
+  const typedSummary = state.typed ? `Typed ${state.typed}.` : 'No letters typed.';
+
+  const nextStatusText = [
+    `Ribbon ${Math.ceil(state.ribbon)} percent.`,
+    `Hardboiled Mode ${state.hardboiled ? 'on' : 'off'}.`,
+    `Witness ${state.witness.memoryLabel}.`,
+    typedSummary,
+    state.message,
+    journalSummary
+  ].join(' ');
+
+  if (nextStatusText !== previousStatusText) {
+    statusPanel.textContent = nextStatusText;
+    previousStatusText = nextStatusText;
+  }
+}
+
 let previousFrameTime = performance.now();
 
 function frame(now = performance.now()) {
@@ -466,19 +493,27 @@ function frame(now = performance.now()) {
   if (state.ribbon > 0) update(deltaTime);
   else updateScreenShake(deltaTime);
   draw();
+  updateStatusPanel();
   requestAnimationFrame(frame);
 }
 
 window.addEventListener('keydown', (event) => {
   const key = event.key;
-  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(key)) event.preventDefault();
+  const hasShortcutModifier = event.ctrlKey || event.metaKey || event.altKey;
+  const isGameMovement = isMovementCode(event.code) && !hasShortcutModifier;
+  if (isGameMovement || [' ', 'Backspace', 'Escape', 'F2'].includes(key)) event.preventDefault();
 
-  if (key === 'r' || key === 'R') {
+  if (isGameMovement) {
+    activeMovementCodes.add(event.code);
+  }
+
+  if (key === 'Escape') {
     state = initialState();
+    activeMovementCodes.clear();
     return;
   }
 
-  if (key === 'h' || key === 'H') {
+  if (key === 'F2') {
     state.hardboiled = !state.hardboiled;
     state.message = state.hardboiled ? 'No backspace. No mercy.' : 'Backspace restored. The night softens by one notch.';
     return;
@@ -503,16 +538,20 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
-  if (/^[a-zA-Z ]$/.test(key) && state.typed.length < 24) {
-    state.typed += key.toUpperCase();
-    return;
+  const character = getTypeableCharacter(event);
+  if (character) {
+    state.typed = appendTypedCharacter(state.typed, character);
   }
-
-  keys.add(key);
 });
 
 window.addEventListener('keyup', (event) => {
-  keys.delete(event.key);
+  if (isMovementCode(event.code)) {
+    activeMovementCodes.delete(event.code);
+  }
+});
+
+window.addEventListener('blur', () => {
+  activeMovementCodes.clear();
 });
 
 frame();
