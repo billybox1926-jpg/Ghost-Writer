@@ -17,8 +17,9 @@ The first version is a tiny HTML5 Canvas scene with:
 - real-time typing input
 - ribbon health
 - hardboiled no-backspace mode
-- semantic command words
+- Semantic command words
 - True Name ghost banishment
+- misspelled True Name ghost mutation
 - paper/ink/wood clue interactions
 - a noir city presentation layer
 
