@@ -10,6 +10,8 @@ You are the ghost of a murdered 1940s journalist. Your soul is trapped inside a 
 
 Combat is semantic. Words like `BURN`, `BIND`, and `LIE` affect ghosts differently. Each ghost also has a hidden True Name scattered through environmental clues. Type a True Name correctly to banish the ghost instantly. Misspell it, and the ribbon frays.
 
+Audio feedback is generated in-browser with the Web Audio API only. It starts or resumes after player input or the Audio button, never during page load, and it can be muted at any time.
+
 ## Current prototype
 
 The first version is a tiny HTML5 Canvas scene with:
@@ -24,6 +26,7 @@ The first version is a tiny HTML5 Canvas scene with:
 - prototype witness memory commands: `FORGET`, `REMEMBER`, and `ACCUSE`
 - current-run journal entries for discovered clues
 - a noir city presentation layer
+- lightweight generated Web Audio feedback for typewriter taps, command outcomes, ribbon damage, ghost pressure, and Mallory banishment
 
 ## Run locally
 
@@ -55,6 +58,7 @@ The smoke test checks that the core files exist and contain the expected prototy
 - `BURN`, `BIND`, `LIE`: after the alley door opens, BURN hurts and enrages Mallory, BIND briefly pins her down, and LIE sends her after a decoy
 - Backspace: erase one character, unless Hardboiled Mode is enabled
 - F2: toggle Hardboiled Mode
+- M while the typed line is empty, or the Audio button below the canvas: toggle subtle generated audio feedback
 - Esc: restart the prototype
 
 ## Project shape
@@ -68,8 +72,13 @@ The smoke test checks that the core files exist and contain the expected prototy
 │   ├── dev-server.mjs
 │   └── smoke-test.mjs
 ├── src/
+│   ├── audio-engine.js
+│   ├── case-flow.js
 │   ├── clue-journal.js
+│   ├── input-rules.js
 │   ├── main.js
+│   ├── screen-shake.js
+│   ├── semantic-rules.js
 │   └── styles.css
 ├── index.html
 ├── package.json

@@ -4,9 +4,52 @@ import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
 import { evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from '../src/semantic-rules.js';
+import { audioCueNames, getNextMuteState, getPressureIntensity } from '../src/audio-engine.js';
 
 const trueName = 'MALLORY VALE';
 
+
+
+assert.ok(
+  audioCueNames.includes('typeKey') && audioCueNames.includes('trueNameBanish'),
+  'audio cue registry should expose required short generated feedback names'
+);
+
+assert.equal(
+  getNextMuteState(false),
+  true,
+  'audio mute helper should toggle unmuted audio to muted'
+);
+
+assert.equal(
+  getNextMuteState(true),
+  false,
+  'audio mute helper should toggle muted audio back on'
+);
+
+assert.equal(
+  getPressureIntensity('danger', { active: true, bound: true, lured: false, muted: false }),
+  0,
+  'bound ghosts should fade pressure audio out even at dangerous range'
+);
+
+assert.equal(
+  getPressureIntensity('warning', { active: true, bound: false, lured: true, muted: false }),
+  0,
+  'lured ghosts should fade pressure audio out while chasing the false lead'
+);
+
+assert.equal(
+  getPressureIntensity('danger', { active: true, angry: true, mutated: true, mutationLevel: 3, bound: false, lured: false, muted: false }),
+  1,
+  'angry mutated danger pressure should cap audio intensity at a safe maximum'
+);
+
+assert.equal(
+  getPressureIntensity('safe', { active: true, bound: false, lured: false, muted: false }),
+  0,
+  'safe pressure should keep the ghost hum silent'
+);
 
 assert.equal(
   normalizeCommittedWord('  mallory   vale  '),
