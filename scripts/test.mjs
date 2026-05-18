@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
-import { evaluateTrueNameAttempt, getRibbonDrop } from '../src/semantic-rules.js';
+import { evaluateTrueNameAttempt, getRibbonDrop, getWitnessCommandResult } from '../src/semantic-rules.js';
 
 const trueName = 'MALLORY VALE';
 
@@ -52,6 +52,41 @@ assert.deepEqual(
   'dropRibbon helper should not report a drop when already empty'
 );
 
+assert.deepEqual(
+  getWitnessCommandResult('guarded', 'FORGET', true),
+  {
+    kind: 'changed',
+    memoryState: 'forgotten',
+    label: 'FORGOTTEN',
+    journal: 'Witness: FORGET makes Eddie lose the minute after Mallory died.',
+    message: 'Eddie Pike forgets the last minute. His cigarette falls through his fingers.'
+  },
+  'FORGET should edit an in-range witness into the forgotten state'
+);
+
+assert.deepEqual(
+  getWitnessCommandResult('forgotten', 'FORGET', true),
+  {
+    kind: 'unchanged',
+    memoryState: 'forgotten',
+    label: 'FORGOTTEN',
+    journal: 'Witness: FORGET makes Eddie lose the minute after Mallory died.',
+    message: 'Eddie Pike is already forgotten. The same word only deepens the bruise.'
+  },
+  'repeating a witness command should not change state twice'
+);
+
+assert.equal(
+  getWitnessCommandResult('guarded', 'ACCUSE', false).kind,
+  'out-of-range',
+  'witness commands should require proximity to the witness'
+);
+
+assert.deepEqual(
+  getWitnessCommandResult('guarded', 'BURN', true),
+  { kind: 'none', memoryState: 'guarded' },
+  'non-witness commands should be ignored by the witness state machine'
+);
 
 const inspectables = [
   { id: 'receipt', title: 'Rain-blurred receipt', x: 100, y: 100, range: 24 },

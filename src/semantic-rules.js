@@ -73,3 +73,59 @@ export function getRibbonDrop(ribbon, amount) {
     dropped: nextRibbon < ribbon
   };
 }
+
+export const witnessCommandStates = {
+  FORGET: {
+    state: 'forgotten',
+    label: 'FORGOTTEN',
+    message: 'Eddie Pike forgets the last minute. His cigarette falls through his fingers.',
+    journal: 'Witness: FORGET makes Eddie lose the minute after Mallory died.'
+  },
+  REMEMBER: {
+    state: 'truthful',
+    label: 'REMEMBERED',
+    message: 'Eddie Pike remembers the receipt, the alley door, and Mallory Vale.',
+    journal: 'Witness: REMEMBER pins the receipt to Mallory Vale and the alley door.'
+  },
+  ACCUSE: {
+    state: 'cornered',
+    label: 'CORNERED',
+    message: 'Eddie Pike breaks. He rasps that the door only listens to OPEN.',
+    journal: 'Witness: ACCUSE corners Eddie into giving up the OPEN command.'
+  }
+};
+
+export function getWitnessCommandResult(memoryState, command, isInRange) {
+  const normalizedCommand = normalizeName(command);
+  const commandState = witnessCommandStates[normalizedCommand];
+
+  if (!commandState) {
+    return { kind: 'none', memoryState };
+  }
+
+  if (!isInRange) {
+    return {
+      kind: 'out-of-range',
+      memoryState,
+      message: `${normalizedCommand} needs a living witness close enough to hear the keys.`
+    };
+  }
+
+  if (memoryState === commandState.state) {
+    return {
+      kind: 'unchanged',
+      memoryState,
+      label: commandState.label,
+      journal: commandState.journal,
+      message: `Eddie Pike is already ${commandState.label.toLowerCase()}. The same word only deepens the bruise.`
+    };
+  }
+
+  return {
+    kind: 'changed',
+    memoryState: commandState.state,
+    label: commandState.label,
+    journal: commandState.journal,
+    message: commandState.message
+  };
+}

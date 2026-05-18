@@ -21,6 +21,7 @@ The first version is a tiny HTML5 Canvas scene with:
 - True Name ghost banishment
 - misspelled True Name ghost mutation
 - inspectable paper/ink/wood clues
+- prototype witness memory commands: `FORGET`, `REMEMBER`, and `ACCUSE`
 - current-run journal entries for discovered clues
 - a noir city presentation layer
 
@@ -50,6 +51,7 @@ The smoke test checks that the core files exist and contain the expected prototy
 - Letter keys: type into the haunted typewriter
 - Enter: commit the typed word, or inspect if the typewriter line is empty and you are near a clue
 - E: inspect a nearby clue when the typewriter line is empty
+- `FORGET`, `REMEMBER`, `ACCUSE`: change Eddie Pike's witness memory when close enough
 - Backspace: erase one character, unless Hardboiled Mode is enabled
 - H: toggle Hardboiled Mode
 - R: restart the prototype

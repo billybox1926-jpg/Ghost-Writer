@@ -11,7 +11,7 @@
 
 - Add an inspect action for paper, ink, and wood objects.
 - Create a clue journal that tracks discovered words and names.
-- Add witnesses with memories that can be edited by typed commands.
+- Add witnesses with memories that can be edited by typed commands. _(Prototype: Eddie Pike now responds to FORGET, REMEMBER, and ACCUSE.)_
 - Make command outcomes depend on context.
 
 ## Phase 3: Encounter design
