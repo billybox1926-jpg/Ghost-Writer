@@ -1,0 +1,11 @@
+{
+  "name": "ghost-writer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "smoke": "node scripts/smoke-test.mjs"
+  },
+  "license": "UNLICENSED"
+}
