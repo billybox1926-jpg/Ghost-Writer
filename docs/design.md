@@ -36,6 +36,12 @@ Combat is a knowledge check under pressure.
 - `LIE`: creates a false target.
 - `OPEN`: forces a passage.
 - `FORGET`: erases a witness memory.
+- `REMEMBER`: restores a witness memory into a more truthful state.
+- `ACCUSE`: pressures a witness into revealing a practical clue.
+
+## Witness state prototype
+
+Eddie Pike is the first living witness. When the detective is close enough, typed commands can push Eddie between guarded, forgotten, remembered, and cornered states. These states are intentionally visible in the HUD so command effects are legible before later puzzles make them subtler.
 
 ## Current prototype ghost
 

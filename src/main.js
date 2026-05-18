@@ -1,5 +1,5 @@
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
-import { clamp, evaluateTrueNameAttempt, getRibbonDrop } from './semantic-rules.js';
+import { clamp, evaluateTrueNameAttempt, getRibbonDrop, getWitnessCommandResult } from './semantic-rules.js';
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
@@ -34,6 +34,15 @@ const inspectables = [
     x: 858,
     y: 330,
     range: 64
+  },
+  {
+    id: 'witness',
+    title: 'Raincoat witness',
+    journal: 'Witness: Eddie Pike flinches at the words FORGET, REMEMBER, and ACCUSE.',
+    message: 'Eddie Pike whispers: type FORGET, REMEMBER, or ACCUSE while I can hear it.',
+    x: 562,
+    y: 348,
+    range: 68
   }
 ];
 
@@ -54,6 +63,14 @@ const initialState = () => ({
   clueFound: false,
   discoveredClueIds: [],
   doorOpen: false,
+  witness: {
+    x: 562,
+    y: 348,
+    name: 'EDDIE PIKE',
+    memoryState: 'guarded',
+    memoryLabel: 'GUARDED',
+    edited: false
+  },
   ghost: {
     x: 690,
     y: 285,
@@ -134,6 +151,40 @@ function getNearbyInspectable() {
   return findInspectableInRange(state.player, inspectables);
 }
 
+function isNearWitness() {
+  return distance(state.player, state.witness) <= 92;
+}
+
+function applyWitnessCommand(word) {
+  const result = getWitnessCommandResult(state.witness.memoryState, word, isNearWitness());
+
+  if (result.kind === 'none') return false;
+
+  state.message = result.message;
+
+  if (result.kind === 'out-of-range') {
+    dropRibbon(4, 5);
+    return true;
+  }
+
+  state.witness.memoryState = result.memoryState;
+  state.witness.memoryLabel = result.label;
+  state.witness.edited = true;
+  state.witness.lastJournal = result.journal;
+
+  if (result.kind === 'changed') {
+    state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'witness');
+    if (result.memoryState === 'truthful') state.clueFound = true;
+    if (result.memoryState === 'cornered') state.doorOpen = true;
+    triggerScreenShake(6, 180);
+    burst(state.witness.x, state.witness.y - 36, 18);
+  } else {
+    triggerScreenShake(3, 120);
+  }
+
+  return true;
+}
+
 function inspectNearby() {
   const inspectable = getNearbyInspectable();
 
@@ -167,6 +218,10 @@ function commitWord() {
 
   if (state.ghost.active && evaluateTrueNameAttempt(word, state.ghost.name) === 'misspelled') {
     mutateGhost();
+    return;
+  }
+
+  if (applyWitnessCommand(word)) {
     return;
   }
 
@@ -239,6 +294,7 @@ function draw() {
   ctx.translate(state.screenShake.offset.x, state.screenShake.offset.y);
   drawCity();
   drawSceneObjects();
+  drawWitness();
   drawPlayer();
   drawGhost();
   drawParticles();
@@ -299,6 +355,10 @@ function drawSceneObjects() {
   ctx.fillRect(116, 323, 58, 28);
   drawPixelText('TYPEWRITER', 81, 314, 13, '#f2b35f');
 
+  ctx.fillStyle = 'rgba(140, 255, 193, 0.12)';
+  ctx.fillRect(518, 342, 88, 42);
+  drawPixelText('WITNESS', 519, 332, 13, '#8cffc1');
+
   for (const inspectable of inspectables) {
     const discovered = state.discoveredClueIds.includes(inspectable.id);
     const isNearby = nearbyInspectable?.id === inspectable.id;
@@ -326,6 +386,31 @@ function drawPlayer() {
   ctx.fillRect(x - 12, y - 72, 24, 12);
   ctx.fillStyle = '#8cffc1';
   ctx.fillRect(x + 15, y - 42, 12, 8);
+}
+
+function drawWitness() {
+  const w = state.witness;
+  const auraColor = w.edited ? 'rgba(242, 179, 95, 0.24)' : 'rgba(140, 255, 193, 0.14)';
+  const coatColor = w.memoryState === 'cornered' ? '#3a1717' : (w.memoryState === 'forgotten' ? '#1a1d20' : '#1f271f');
+
+  ctx.fillStyle = auraColor;
+  ctx.beginPath();
+  ctx.ellipse(w.x, w.y - 24, 34, 52, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = coatColor;
+  ctx.fillRect(w.x - 15, w.y - 52, 30, 52);
+  ctx.fillStyle = '#101010';
+  ctx.fillRect(w.x - 22, w.y - 60, 44, 9);
+  ctx.fillStyle = '#d7c7a1';
+  ctx.fillRect(w.x - 8, w.y - 48, 16, 12);
+  ctx.fillStyle = '#f2b35f';
+  ctx.fillRect(w.x + 18, w.y - 32, 18, 3);
+  drawPixelText(`EDDIE: ${w.memoryLabel}`, w.x - 54, w.y + 22, 13, w.edited ? '#f2b35f' : '#d7c7a1');
+
+  if (isNearWitness()) {
+    drawPixelText('type FORGET / REMEMBER / ACCUSE', w.x - 106, w.y - 76, 13, '#8cffc1');
+  }
 }
 
 function drawGhost() {
@@ -385,6 +470,7 @@ function drawHud() {
 
   drawPixelText(`Ribbon: ${Math.ceil(state.ribbon)}%`, 36, 52, 20, state.ribbon < 25 ? '#9d2832' : '#f2b35f');
   drawPixelText(`Hardboiled Mode: ${state.hardboiled ? 'ON' : 'OFF'}`, 220, 52, 20, '#d7c7a1');
+  drawPixelText(`Witness: ${state.witness.memoryLabel}`, 520, 52, 20, state.witness.edited ? '#f2b35f' : '#d7c7a1');
   drawPixelText(`Typed: ${state.typed || '_'}`, 36, 88, 22, '#8cffc1');
   drawPixelText(state.message, 36, 120, 18, '#d7c7a1');
 
