@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
+import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
 import { evaluateTrueNameAttempt, getRibbonDrop, getWitnessCommandResult } from '../src/semantic-rules.js';
 
 const trueName = 'MALLORY VALE';
@@ -44,6 +45,40 @@ assert.deepEqual(
   getRibbonDrop(5, 12),
   { ribbon: 0, dropped: true },
   'dropRibbon helper should clamp ribbon at zero'
+);
+
+const shake = createScreenShakeState();
+triggerScreenShakeState(shake, 20, 500, () => 0);
+assert.ok(
+  shake.magnitude <= 12,
+  'screen shake should cap tuned impacts below harsh full-screen jumps'
+);
+assert.equal(
+  shake.duration,
+  320,
+  'screen shake should cap long impacts to a concise readable rhythm'
+);
+
+updateScreenShakeState(shake, 32);
+const earlyOffset = Math.hypot(shake.offset.x, shake.offset.y);
+assert.ok(
+  earlyOffset > 0 && earlyOffset < 12,
+  'screen shake should create a softened nonzero rhythmic offset after an impact'
+);
+
+const elapsedBeforeCarryover = shake.elapsed;
+triggerScreenShakeState(shake, 3, 180, () => 0.25);
+assert.equal(
+  shake.elapsed,
+  elapsedBeforeCarryover,
+  'minor repeated shake events should not restart the cadence of a stronger shake'
+);
+
+updateScreenShakeState(shake, 1000);
+assert.deepEqual(
+  shake.offset,
+  { x: 0, y: 0 },
+  'screen shake should settle cleanly back to a neutral offset'
 );
 
 assert.deepEqual(

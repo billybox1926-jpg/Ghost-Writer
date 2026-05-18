@@ -1,4 +1,5 @@
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
+import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from './screen-shake.js';
 import { clamp, evaluateTrueNameAttempt, getRibbonDrop, getWitnessCommandResult } from './semantic-rules.js';
 
 const canvas = document.querySelector('#game');
@@ -80,13 +81,7 @@ const initialState = () => ({
     mutated: false,
     mutationLevel: 0
   },
-  screenShake: {
-    offset: { x: 0, y: 0 },
-    vector: { x: 0, y: 0 },
-    magnitude: 0,
-    duration: 0,
-    elapsed: 0
-  },
+  screenShake: createScreenShakeState(),
   particles: []
 });
 
@@ -97,35 +92,11 @@ function distance(a, b) {
 }
 
 function triggerScreenShake(magnitude = 8, duration = 240) {
-  const angle = Math.random() * Math.PI * 2;
-  const shake = state.screenShake;
-  shake.vector.x = Math.cos(angle);
-  shake.vector.y = Math.sin(angle);
-  shake.magnitude = Math.max(shake.magnitude, magnitude);
-  shake.duration = Math.max(shake.duration, duration);
-  shake.elapsed = 0;
+  triggerScreenShakeState(state.screenShake, magnitude, duration);
 }
 
 function updateScreenShake(deltaTime) {
-  const shake = state.screenShake;
-
-  if (shake.elapsed >= shake.duration || shake.magnitude <= 0) {
-    shake.offset.x = 0;
-    shake.offset.y = 0;
-    return;
-  }
-
-  shake.elapsed = Math.min(shake.elapsed + deltaTime, shake.duration);
-  const linearDecay = 1 - (shake.elapsed / shake.duration);
-  const snap = Math.sin(shake.elapsed * 0.09) >= 0 ? 1 : -1;
-  shake.offset.x = shake.vector.x * shake.magnitude * linearDecay * snap;
-  shake.offset.y = shake.vector.y * shake.magnitude * linearDecay * -snap;
-
-  if (shake.elapsed >= shake.duration) {
-    shake.offset.x = 0;
-    shake.offset.y = 0;
-    shake.magnitude = 0;
-  }
+  updateScreenShakeState(state.screenShake, deltaTime);
 }
 
 function dropRibbon(amount, shakeMagnitude = 4 + amount * 0.45) {
