@@ -46,7 +46,30 @@ Then visit `http://localhost:8000`.
 npm run smoke
 ```
 
-The smoke test checks that the core files exist and contain the expected prototype hooks.
+The smoke test checks that the core files exist and contain the expected prototype hooks. It is intentionally dependency-free and fast, and it does not launch a browser.
+
+## Manual browser smoke test
+
+Use this checklist when you want visual confirmation of the Canvas prototype without adding project dependencies:
+
+1. Start the included static server:
+
+   ```bash
+   npm run dev
+   ```
+
+2. Visit `http://localhost:8000/index.html` in a browser.
+3. Confirm the noir title card, controls help, and `Ghost Writer prototype canvas` appear.
+4. Click or tab to the canvas, press `A`, and confirm the HUD/status reflects one typed letter without a console error.
+5. Press `Backspace`, `E`, arrow keys or WASD, and `Esc` to confirm the page remains responsive.
+
+An optional automated browser check is also available:
+
+```bash
+npm run smoke:browser
+```
+
+`npm run smoke:browser` uses only built-in Node APIs plus an already-installed Chromium-family browser (`chromium`, `chromium-browser`, or `google-chrome`) when one is available. It looks for `firefox` too, but skips cleanly because this dependency-free script uses Chrome DevTools Protocol for page checks. When no supported browser tooling is available, it exits successfully with a clear skipped message. When Chromium-family tooling is available, it loads `index.html`, verifies the canvas and immediate runtime state, sends one keyboard interaction, checks for immediate browser errors, and writes `artifacts/browser-smoke.png`.
 
 ## Controls
 
@@ -69,6 +92,7 @@ The smoke test checks that the core files exist and contain the expected prototy
 │   ├── design.md
 │   └── roadmap.md
 ├── scripts/
+│   ├── browser-smoke.mjs
 │   ├── dev-server.mjs
 │   └── smoke-test.mjs
 ├── src/

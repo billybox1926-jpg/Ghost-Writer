@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "smoke": "node scripts/smoke-test.mjs",
+    "smoke:browser": "node scripts/browser-smoke.mjs",
     "test": "node scripts/test.mjs"
   },
   "license": "UNLICENSED"
