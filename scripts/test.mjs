@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { getFirstCaseObjective, getFirstCasePhase, firstCasePhases } from '../src/case-flow.js';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
@@ -155,8 +156,8 @@ assert.deepEqual(
     kind: 'changed',
     memoryState: 'forgotten',
     label: 'FORGOTTEN',
-    journal: 'Witness: FORGET makes Eddie lose the minute after Mallory died.',
-    message: 'Eddie Pike forgets the last minute. His cigarette falls through his fingers.'
+    journal: "Witness: FORGET blurs Eddie's fare, leaving only Mallory's door in his panic.",
+    message: 'Eddie Pike forgets the fare on the receipt, but the locked alley door still stains his sleeve.'
   },
   'FORGET should edit an in-range witness into the forgotten state'
 );
@@ -167,7 +168,7 @@ assert.deepEqual(
     kind: 'unchanged',
     memoryState: 'forgotten',
     label: 'FORGOTTEN',
-    journal: 'Witness: FORGET makes Eddie lose the minute after Mallory died.',
+    journal: "Witness: FORGET blurs Eddie's fare, leaving only Mallory's door in his panic.",
     message: 'Eddie Pike is already forgotten. The same word only deepens the bruise.'
   },
   'repeating a witness command should not change state twice'
@@ -180,9 +181,52 @@ assert.equal(
 );
 
 assert.deepEqual(
+  getWitnessCommandResult('truthful', 'ACCUSE', true),
+  {
+    kind: 'changed',
+    memoryState: 'cornered',
+    label: 'CORNERED',
+    journal: 'Witness: ACCUSE ties Eddie to Black Ribbon Press and gives up OPEN.',
+    message: 'Eddie Pike breaks. Black Ribbon Press paid him, and the door only listens to OPEN.'
+  },
+  'ACCUSE should connect Eddie to the door command and ending lead'
+);
+
+assert.deepEqual(
   getWitnessCommandResult('guarded', 'BURN', true),
   { kind: 'none', memoryState: 'guarded' },
   'non-witness commands should be ignored by the witness state machine'
+);
+
+
+assert.equal(
+  getFirstCasePhase({ discoveredClueIds: [], witnessMemoryState: 'guarded', doorOpen: false, ghostActive: true }),
+  firstCasePhases.BEGINNING,
+  'first case should start in the beginning phase before clues turn the investigation'
+);
+
+assert.equal(
+  getFirstCasePhase({ discoveredClueIds: ['receipt'], witnessMemoryState: 'guarded', doorOpen: false, ghostActive: true }),
+  firstCasePhases.INVESTIGATION,
+  'finding the receipt should move the first case into its investigation turn'
+);
+
+assert.equal(
+  getFirstCasePhase({ discoveredClueIds: ['receipt', 'witness'], witnessMemoryState: 'cornered', doorOpen: true, ghostActive: true }),
+  firstCasePhases.CONFRONTATION,
+  'opening the locked door should mark the Mallory Vale confrontation phase'
+);
+
+assert.equal(
+  getFirstCasePhase({ discoveredClueIds: ['ending-lead'], witnessMemoryState: 'cornered', doorOpen: true, ghostActive: false }),
+  firstCasePhases.ENDING_LEAD,
+  'banishing Mallory should advance to the ending lead'
+);
+
+assert.match(
+  getFirstCaseObjective(firstCasePhases.ENDING_LEAD),
+  /Black Ribbon Press|printer/i,
+  'ending lead objective should point to the next case hook'
 );
 
 const inspectables = [
