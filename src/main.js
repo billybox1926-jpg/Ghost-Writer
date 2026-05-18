@@ -2,7 +2,7 @@ import { firstCasePhases, getFirstCaseObjective, getFirstCasePhase } from './cas
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from './screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, normalizeCommittedWord } from './input-rules.js';
-import { clamp, evaluateTrueNameAttempt, getRibbonDrop, getWitnessCommandResult } from './semantic-rules.js';
+import { clamp, evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from './semantic-rules.js';
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
@@ -16,7 +16,7 @@ const inspectables = [
     id: 'receipt',
     title: 'Rain-blurred receipt',
     journal: 'Receipt: Eddie Pike paid for one midnight fare to Mallory Vale and the locked alley door.',
-    message: 'The receipt is Eddie Pike's fare slip. Ink blooms: Mallory Vale rode to the locked alley door.',
+    message: "The receipt is Eddie Pike's fare slip. Ink blooms: Mallory Vale rode to the locked alley door.",
     x: 396,
     y: 332,
     range: 54,
@@ -34,7 +34,7 @@ const inspectables = [
   {
     id: 'door',
     title: 'Locked alley door',
-    journal: 'Door: fresh scratches match Mallory's nails; the wood is waiting for OPEN.',
+    journal: "Door: fresh scratches match Mallory's nails; the wood is waiting for OPEN.",
     message: 'The locked door smells of rain, roses, and burned newsprint. Eddie knows the word it obeys.',
     x: 858,
     y: 330,
@@ -43,8 +43,8 @@ const inspectables = [
   {
     id: 'witness',
     title: 'Raincoat witness',
-    journal: 'Witness: Eddie Pike carried Mallory's receipt and flinches at FORGET, REMEMBER, and ACCUSE.',
-    message: 'Eddie Pike hides under his raincoat. Type FORGET, REMEMBER, or ACCUSE while he can hear it.',
+    journal: "Witness: Eddie Pike carried Mallory's receipt and flinches at FORGET, REMEMBER, and ACCUSE.",
+    message: "Eddie Pike hides under his raincoat. Type FORGET, REMEMBER, or ACCUSE while he can hear it.",
     x: 562,
     y: 348,
     range: 68
@@ -54,21 +54,18 @@ const inspectables = [
 const caseJournalEntries = [
   {
     id: 'door-open',
-    journal: 'Door opened: Eddie's hidden word exposes the room where Mallory Vale died.'
+    journal: "Door opened: Eddie's hidden word exposes the room where Mallory Vale died."
   },
   {
     id: 'ending-lead',
-    journal: 'Lead: Mallory leaves a printer's devil mark from the Black Ribbon Press.'
+    journal: "Lead: Mallory leaves a printer's devil mark from the Black Ribbon Press."
   }
 ];
 
 const journalItems = [...inspectables, ...caseJournalEntries];
 
 const commands = {
-  BURN: 'The ghost flares like wet newspaper in a furnace.',
-  BIND: 'Invisible string cinches the ghost into a ledger.',
-  LIE: 'A false obituary peels away from the page and draws its eyes.',
-  OPEN: 'The locked alley door remembers Eddie's fare slip and swings onto Mallory Vale's last room.',
+  OPEN: "The locked alley door remembers Eddie's fare slip and swings onto Mallory Vale's last room.",
   FORGET: 'A witness loses a minute. The rain keeps the secret.'
 };
 
@@ -97,7 +94,10 @@ const initialState = () => ({
     active: true,
     angry: false,
     mutated: false,
-    mutationLevel: 0
+    mutationLevel: 0,
+    boundUntil: 0,
+    luredUntil: 0,
+    lure: { x: 690, y: 285 }
   },
   screenShake: createScreenShakeState(),
   particles: []
@@ -130,9 +130,12 @@ function mutateGhost() {
   const g = state.ghost;
   g.angry = true;
   g.mutated = true;
+  g.boundUntil = 0;
+  g.luredUntil = 0;
   g.mutationLevel = clamp(g.mutationLevel + 1, 1, 3);
-  dropRibbon(12 + g.mutationLevel * 4, 10 + g.mutationLevel * 3);
-  state.message = 'The botched True Name curdles. The ghost mutates and bears down.';
+  const loss = ribbonLoss.trueNameMissBase + g.mutationLevel * ribbonLoss.trueNameMissPerMutation;
+  dropRibbon(loss, 9 + g.mutationLevel * 2);
+  state.message = 'Dangerously close True Name rejected: the spelling curdles. Mallory mutates and bears down.';
   burst(g.x, g.y, 14 + g.mutationLevel * 8);
 }
 
@@ -161,7 +164,7 @@ function applyWitnessCommand(word) {
   state.message = result.message;
 
   if (result.kind === 'out-of-range') {
-    dropRibbon(4, 5);
+    dropRibbon(result.loss, 5);
     return true;
   }
 
@@ -202,16 +205,72 @@ function inspectNearby() {
   return true;
 }
 
+function applyGhostCommand(word) {
+  const result = getGhostCommandResult(word, {
+    ghostActive: state.ghost.active,
+    doorOpen: state.doorOpen
+  });
+
+  if (result.kind === 'none') return false;
+
+  state.message = result.message;
+
+  if (result.kind === 'blocked') {
+    dropRibbon(result.loss, 4);
+    return true;
+  }
+
+  if (result.kind === 'out-of-context') {
+    triggerScreenShake(2, 100);
+    return true;
+  }
+
+  const g = state.ghost;
+  dropRibbon(result.loss, result.command === 'BURN' ? 8 : 5);
+  triggerScreenShake(result.command === 'BURN' ? 7 : 4, 180);
+
+  if (result.command === 'BURN') {
+    g.angry = true;
+    g.boundUntil = 0;
+    g.luredUntil = 0;
+    const pushDistance = 42;
+    const ghostDistance = Math.max(distance(g, state.player), 1);
+    g.x = clamp(g.x + ((g.x - state.player.x) / ghostDistance) * pushDistance, 42, canvas.width - 42);
+    g.y = clamp(g.y + ((g.y - state.player.y) / ghostDistance) * pushDistance, 210, canvas.height - 92);
+    burst(g.x, g.y, 26);
+  }
+
+  if (result.command === 'BIND') {
+    g.angry = false;
+    g.boundUntil = performance.now() + result.duration;
+    burst(g.x, g.y, 16);
+  }
+
+  if (result.command === 'LIE') {
+    g.angry = false;
+    g.luredUntil = performance.now() + result.duration;
+    g.lure = {
+      x: clamp(state.player.x + (state.player.x < canvas.width / 2 ? 170 : -170), 42, canvas.width - 42),
+      y: clamp(state.player.y + (state.player.y < 330 ? 72 : -72), 210, canvas.height - 92)
+    };
+    burst(g.lure.x, g.lure.y, 20);
+  }
+
+  return true;
+}
+
 function commitWord() {
   const word = normalizeCommittedWord(state.typed);
   state.typed = '';
 
   if (!word) return;
 
-  if (evaluateTrueNameAttempt(word, state.ghost.name) === 'exact' && state.ghost.active) {
+  const trueNameAttempt = evaluateTrueNameAttempt(word, state.ghost.name);
+
+  if (trueNameAttempt === 'exact' && state.ghost.active) {
     if (!state.doorOpen) {
-      state.message = 'Mallory hears her name through the locked door, but the sealed room keeps its confession. Find Eddie's door word.';
-      triggerScreenShake(5, 160);
+      state.message = 'True Name blocked: Mallory hears it through the locked door, but the sealed room keeps its confession. ACCUSE Eddie, then OPEN the door.';
+      dropRibbon(ribbonLoss.gatedWord, 4);
       return;
     }
 
@@ -223,7 +282,7 @@ function commitWord() {
     return;
   }
 
-  if (state.ghost.active && evaluateTrueNameAttempt(word, state.ghost.name) === 'misspelled') {
+  if (state.ghost.active && trueNameAttempt === 'misspelled') {
     mutateGhost();
     return;
   }
@@ -232,30 +291,29 @@ function commitWord() {
     return;
   }
 
+  if (applyGhostCommand(word)) {
+    return;
+  }
+
   if (commands[word]) {
     if (word === 'OPEN' && state.witness.memoryState !== 'cornered') {
-      state.message = 'OPEN rattles the lock, but Eddie still owns the missing confession. ACCUSE him first.';
-      triggerScreenShake(4, 140);
+      state.message = 'OPEN is blocked: the lock rattles, but Eddie still owns the missing confession. ACCUSE him first.';
+      dropRibbon(ribbonLoss.gatedWord, 4);
       return;
     }
 
-    state.message = commands[word];
+    state.message = `${word} is accepted. ${commands[word]}`;
     triggerScreenShake(7, 220);
     if (word === 'OPEN') {
       state.doorOpen = true;
       state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'door-open');
       updateCasePhase();
     }
-    if (state.ghost.active && ['BURN', 'BIND', 'LIE'].includes(word)) {
-      dropRibbon(6, 8);
-      state.ghost.angry = word === 'BURN';
-      burst(state.ghost.x, state.ghost.y, 18);
-    }
     return;
   }
 
-  dropRibbon(10, 8);
-  state.message = 'Wrong letters snag the ribbon. The typebars twitch in pain.';
+  dropRibbon(ribbonLoss.wrongWord, 7);
+  state.message = `${word} is rejected. Wrong letters snag the ribbon, but the night gives you room to recover.`;
 }
 
 function burst(x, y, count) {
@@ -280,16 +338,22 @@ function update(deltaTime) {
 
   if (state.ghost.active) {
     const g = state.ghost;
-    if (g.mutated) {
-      const ghostPressure = 0.38 + g.mutationLevel * 0.12;
-      const ghostDistance = Math.max(distance(g, p), 1);
-      g.x = clamp(g.x + ((p.x - g.x) / ghostDistance) * ghostPressure, 42, canvas.width - 42);
-      g.y = clamp(g.y + ((p.y - g.y) / ghostDistance) * ghostPressure, 210, canvas.height - 92);
+    const now = performance.now();
+    const isBound = g.boundUntil > now;
+    const isLured = g.luredUntil > now;
+    const target = isLured ? g.lure : p;
+    const shouldAdvance = (g.mutated || g.angry || isLured) && !isBound;
+
+    if (shouldAdvance) {
+      const ghostPressure = isLured ? 0.72 : (g.mutated ? 0.34 + g.mutationLevel * 0.1 : 0.44);
+      const ghostDistance = Math.max(distance(g, target), 1);
+      g.x = clamp(g.x + ((target.x - g.x) / ghostDistance) * ghostPressure, 42, canvas.width - 42);
+      g.y = clamp(g.y + ((target.y - g.y) / ghostDistance) * ghostPressure, 210, canvas.height - 92);
     }
 
-    if (distance(p, g) < 120) {
-      const drainRate = g.mutated ? 0.11 + g.mutationLevel * 0.045 : (g.angry ? 0.08 : 0.035);
-      dropRibbon(drainRate, g.mutated ? 3.5 : 2);
+    const pressure = getProximityPressure(distance(p, g), g);
+    if (!isBound && !isLured && pressure.drainRate > 0) {
+      dropRibbon(pressure.drainRate, g.mutated ? 3.5 : 2);
     }
   }
 
@@ -432,8 +496,11 @@ function drawWitness() {
 function drawGhost() {
   if (!state.ghost.active) return;
   const g = state.ghost;
-  const pulse = Math.sin(performance.now() / 180) * 7;
-  const mutationPulse = g.mutated ? Math.sin(performance.now() / 55) * (3 + g.mutationLevel) : 0;
+  const now = performance.now();
+  const isBound = g.boundUntil > now;
+  const isLured = g.luredUntil > now;
+  const pulse = Math.sin(now / 180) * 7;
+  const mutationPulse = g.mutated ? Math.sin(now / 55) * (3 + g.mutationLevel) : 0;
   ctx.fillStyle = g.mutated ? 'rgba(199, 27, 61, 0.78)' : (g.angry ? 'rgba(157, 40, 50, 0.72)' : 'rgba(140, 255, 193, 0.42)');
   ctx.beginPath();
   ctx.ellipse(
@@ -446,6 +513,27 @@ function drawGhost() {
     Math.PI * 2
   );
   ctx.fill();
+
+  if (isLured) {
+    ctx.strokeStyle = 'rgba(242, 179, 95, 0.45)';
+    ctx.setLineDash([6, 8]);
+    ctx.beginPath();
+    ctx.moveTo(g.x, g.y + pulse);
+    ctx.lineTo(g.lure.x, g.lure.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawPixelText('FALSE LEAD', g.lure.x - 44, g.lure.y - 16, 13, '#f2b35f');
+  }
+
+  if (isBound) {
+    ctx.strokeStyle = 'rgba(140, 255, 193, 0.72)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(g.x, g.y + pulse, 54, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    drawPixelText('BOUND', g.x - 28, g.y + 88, 14, '#8cffc1');
+  }
 
   if (g.mutated) {
     ctx.strokeStyle = 'rgba(140, 255, 193, 0.68)';
@@ -484,12 +572,15 @@ function drawHud() {
   ctx.strokeStyle = 'rgba(215, 199, 161, 0.25)';
   ctx.strokeRect(18, 18, canvas.width - 36, 188);
 
+  const pressure = getProximityPressure(distance(state.player, state.ghost), state.ghost);
+  const pressureColor = pressure.level === 'danger' ? '#9d2832' : (pressure.level === 'warning' ? '#f2b35f' : '#d7c7a1');
   drawPixelText(`Ribbon: ${Math.ceil(state.ribbon)}%`, 36, 52, 20, state.ribbon < 25 ? '#9d2832' : '#f2b35f');
-  drawPixelText(`Hardboiled Mode: ${state.hardboiled ? 'ON' : 'OFF'}`, 220, 52, 20, '#d7c7a1');
+  drawPixelText(`Pressure: ${pressure.label}`, 220, 52, 20, pressureColor);
   drawPixelText(`Witness: ${state.witness.memoryLabel}`, 520, 52, 20, state.witness.edited ? '#f2b35f' : '#d7c7a1');
   drawPixelText(`Typed: ${state.typed || '_'}`, 36, 88, 22, '#8cffc1');
   drawPixelText(state.message, 36, 120, 18, '#d7c7a1');
   drawPixelText(getFirstCaseObjective(state.casePhase), 36, 146, 15, '#8cffc1');
+  drawPixelText(`Hardboiled Mode: ${state.hardboiled ? 'ON' : 'OFF'}`, 720, 146, 15, '#d7c7a1');
 
   const discoveredClues = getDiscoveredClues(journalItems, state.discoveredClueIds);
   drawPixelText('Journal:', 36, 172, 16, '#f2b35f');
@@ -516,6 +607,7 @@ function updateStatusPanel() {
   const nextStatusText = [
     `Ribbon ${Math.ceil(state.ribbon)} percent.`,
     `Hardboiled Mode ${state.hardboiled ? 'on' : 'off'}.`,
+    `Ghost pressure ${getProximityPressure(distance(state.player, state.ghost), state.ghost).label}.`,
     `Witness ${state.witness.memoryLabel}.`,
     getFirstCaseObjective(state.casePhase),
     typedSummary,
@@ -577,8 +669,8 @@ window.addEventListener('keydown', (event) => {
   if (key === 'Backspace') {
     if (!state.hardboiled) state.typed = state.typed.slice(0, -1);
     else {
-      dropRibbon(3, 5);
-      state.message = 'Hardboiled Mode has no backspace key.';
+      dropRibbon(ribbonLoss.hardboiledBackspace, 4);
+      state.message = 'Backspace is blocked in Hardboiled Mode. The ribbon frays, but only a little.';
     }
     return;
   }

@@ -2,6 +2,85 @@ export function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+export const ribbonLoss = {
+  wrongWord: 6,
+  gatedWord: 2,
+  witnessOutOfRange: 3,
+  hardboiledBackspace: 2,
+  trueNameMissBase: 8,
+  trueNameMissPerMutation: 3,
+  proximityCalm: 0.026,
+  proximityAngry: 0.055,
+  proximityMutatedBase: 0.085,
+  proximityMutatedPerLevel: 0.03
+};
+
+export const ghostCommandRules = {
+  BURN: {
+    loss: 8,
+    pressure: 'enraged',
+    message: 'BURN is accepted. Mallory flares hot and recoils, but the heat makes her faster after you.',
+    journalFeedback: 'BURN hurts most, knocks the ghost back, then leaves her angry.'
+  },
+  BIND: {
+    loss: 4,
+    pressure: 'bound',
+    duration: 2600,
+    message: 'BIND is accepted. Black ribbon staples Mallory to the floor for a few breaths.',
+    journalFeedback: 'BIND costs less ribbon and pauses ghost pressure briefly.'
+  },
+  LIE: {
+    loss: 3,
+    pressure: 'lured',
+    duration: 3000,
+    message: 'LIE is accepted. A false obituary crosses the alley; Mallory chases the wrong ending.',
+    journalFeedback: 'LIE is cheap and redirects the ghost toward a decoy.'
+  }
+};
+
+export function getGhostCommandResult(command, { ghostActive, doorOpen }) {
+  const normalizedCommand = normalizeName(command);
+  const rule = ghostCommandRules[normalizedCommand];
+
+  if (!rule) return { kind: 'none' };
+
+  if (!ghostActive) {
+    return {
+      kind: 'out-of-context',
+      command: normalizedCommand,
+      message: `${normalizedCommand} has nothing to bite. Mallory is already gone.`
+    };
+  }
+
+  if (!doorOpen) {
+    return {
+      kind: 'blocked',
+      command: normalizedCommand,
+      loss: ribbonLoss.gatedWord,
+      message: `${normalizedCommand} scratches at the sealed door. Open Mallory's room before fighting the ghost directly.`
+    };
+  }
+
+  return {
+    kind: 'accepted',
+    command: normalizedCommand,
+    ...rule
+  };
+}
+
+export function getProximityPressure(distanceToGhost, ghostState) {
+  if (!ghostState.active) return { label: 'BANISHED', level: 'clear', drainRate: 0 };
+  if (distanceToGhost >= 120) return { label: 'DISTANT', level: 'safe', drainRate: 0 };
+
+  const label = distanceToGhost < 54 ? 'GRAVE-CLOSE' : (distanceToGhost < 86 ? 'CLOSE' : 'NEAR');
+  const level = distanceToGhost < 54 ? 'danger' : (distanceToGhost < 86 ? 'warning' : 'watch');
+  const drainRate = ghostState.mutated
+    ? ribbonLoss.proximityMutatedBase + ghostState.mutationLevel * ribbonLoss.proximityMutatedPerLevel
+    : (ghostState.angry ? ribbonLoss.proximityAngry : ribbonLoss.proximityCalm);
+
+  return { label, level, drainRate };
+}
+
 export function normalizeName(value) {
   return value.trim().toUpperCase().replace(/\s+/g, ' ');
 }
@@ -78,19 +157,19 @@ export const witnessCommandStates = {
   FORGET: {
     state: 'forgotten',
     label: 'FORGOTTEN',
-    message: 'Eddie Pike forgets the fare on the receipt, but the locked alley door still stains his sleeve.',
+    message: 'FORGET is accepted. Eddie loses the fare, but the locked alley door still stains his sleeve.',
     journal: "Witness: FORGET blurs Eddie's fare, leaving only Mallory's door in his panic."
   },
   REMEMBER: {
     state: 'truthful',
     label: 'REMEMBERED',
-    message: 'Eddie Pike remembers Mallory Vale pressing the receipt into his palm at the locked alley door.',
+    message: 'REMEMBER is accepted. Eddie sees Mallory Vale pressing the receipt into his palm at the locked alley door.',
     journal: "Witness: REMEMBER pins Eddie's receipt to Mallory Vale and the locked alley door."
   },
   ACCUSE: {
     state: 'cornered',
     label: 'CORNERED',
-    message: 'Eddie Pike breaks. Black Ribbon Press paid him, and the door only listens to OPEN.',
+    message: 'ACCUSE is accepted. Eddie breaks: Black Ribbon Press paid him, and the door only listens to OPEN.',
     journal: 'Witness: ACCUSE ties Eddie to Black Ribbon Press and gives up OPEN.'
   }
 };
@@ -107,7 +186,8 @@ export function getWitnessCommandResult(memoryState, command, isInRange) {
     return {
       kind: 'out-of-range',
       memoryState,
-      message: `${normalizedCommand} needs a living witness close enough to hear the keys.`
+      loss: ribbonLoss.witnessOutOfRange,
+      message: `${normalizedCommand} is rejected at this distance. Eddie must be close enough to hear the keys.`
     };
   }
 
@@ -117,7 +197,7 @@ export function getWitnessCommandResult(memoryState, command, isInRange) {
       memoryState,
       label: commandState.label,
       journal: commandState.journal,
-      message: `Eddie Pike is already ${commandState.label.toLowerCase()}. The same word only deepens the bruise.`
+      message: `${normalizedCommand} is accepted, but Eddie is already ${commandState.label.toLowerCase()}. The same word only deepens the bruise.`
     };
   }
 
