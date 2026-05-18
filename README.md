@@ -53,8 +53,8 @@ The smoke test checks that the core files exist and contain the expected prototy
 - E: inspect a nearby clue when the typewriter line is empty
 - `FORGET`, `REMEMBER`, `ACCUSE`: change Eddie Pike's witness memory when close enough
 - Backspace: erase one character, unless Hardboiled Mode is enabled
-- H: toggle Hardboiled Mode
-- R: restart the prototype
+- F2: toggle Hardboiled Mode
+- Esc: restart the prototype
 
 ## Project shape
 

@@ -1,9 +1,71 @@
 import assert from 'node:assert/strict';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
+import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
 import { evaluateTrueNameAttempt, getRibbonDrop, getWitnessCommandResult } from '../src/semantic-rules.js';
 
 const trueName = 'MALLORY VALE';
+
+
+assert.equal(
+  normalizeCommittedWord('  mallory   vale  '),
+  'MALLORY VALE',
+  'committed words should be trimmed, uppercased, and space-normalized before rule checks'
+);
+
+assert.equal(
+  normalizeCommittedWord('A'.repeat(maxTypedCharacters + 8)).length,
+  maxTypedCharacters,
+  'committed words should be capped at the prototype input length limit'
+);
+
+assert.equal(
+  appendTypedCharacter('INK', 'Y'),
+  'INKY',
+  'printable typewriter keys should append to the command buffer'
+);
+
+assert.equal(
+  appendTypedCharacter('A'.repeat(maxTypedCharacters), 'B'),
+  'A'.repeat(maxTypedCharacters),
+  'typing should stop at the prototype input length limit'
+);
+
+assert.equal(
+  getTypeableCharacter({ key: 'm' }),
+  'M',
+  'letter key presses should be normalized to uppercase typewriter text'
+);
+
+assert.equal(
+  getTypeableCharacter({ key: 'r', repeat: true }),
+  '',
+  'held letter keys should not flood repeated command text'
+);
+
+assert.equal(
+  getTypeableCharacter({ key: 'v', ctrlKey: true }),
+  '',
+  'browser or assistive modifier shortcuts should not leak into command text'
+);
+
+assert.equal(
+  getTypeableCharacter({ key: 'Dead' }),
+  '',
+  'dead-key composition should be ignored until it resolves to a printable key'
+);
+
+assert.equal(
+  isMovementCode('KeyW'),
+  true,
+  'WASD physical codes should be recognized for movement even when key text differs'
+);
+
+assert.deepEqual(
+  getMovementAxis(new Set(['KeyD', 'ArrowUp'])),
+  { dx: 1, dy: -1 },
+  'movement state should derive a stable axis from active physical keys'
+);
 
 assert.equal(
   evaluateTrueNameAttempt('MALLORY VALE', trueName),
