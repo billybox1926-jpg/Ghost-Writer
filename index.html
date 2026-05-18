@@ -23,7 +23,7 @@
       aria-label="Ghost Writer prototype canvas"
       aria-describedby="controls-help game-status"
     >
-      Ghost Writer is a keyboard-controlled canvas game. Move with WASD or arrow keys, type command words, inspect clues with E or Enter, restart with Escape, and toggle Hardboiled Mode with F2.
+      Ghost Writer is a keyboard-controlled canvas game. Move with WASD or arrow keys, type command words, inspect clues with E or Enter, toggle generated audio with M or the Audio button, restart with Escape, and toggle Hardboiled Mode with F2.
     </canvas>
     <section id="game-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true">
       Ribbon 100 percent. Hardboiled Mode off. Witness guarded. No letters typed. Find the True Name. Paper, ink, and wood will talk.
@@ -33,6 +33,7 @@
       <p><strong>Type:</strong> letters, Enter to commit</p>
       <p><strong>Inspect:</strong> E or empty Enter near a clue</p>
       <p><strong>Toggle:</strong> F2 for Hardboiled Mode</p>
+      <p><strong>Audio:</strong> M when the typed line is empty, or <button id="audio-toggle" class="audio-toggle" type="button" aria-pressed="true">Audio: On</button></p>
       <p><strong>Restart:</strong> Esc</p>
     </section>
   </main>

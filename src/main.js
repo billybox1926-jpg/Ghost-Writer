@@ -3,9 +3,11 @@ import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from './screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, normalizeCommittedWord } from './input-rules.js';
 import { clamp, evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from './semantic-rules.js';
+import { createAudioEngine, getPressureIntensity } from './audio-engine.js';
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
+const audio = createAudioEngine();
 
 const activeMovementCodes = new Set();
 const statusPanel = document.querySelector('#game-status');
@@ -133,6 +135,7 @@ const initialState = () => ({
 });
 
 let state = initialState();
+let lastRibbonDamageCueTime = 0;
 
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -152,6 +155,11 @@ function dropRibbon(amount, shakeMagnitude = 4 + amount * 0.45) {
   if (result.dropped) {
     state.ribbon = result.ribbon;
     triggerScreenShake(shakeMagnitude, 180 + Math.min(amount * 12, 180));
+    const now = performance.now();
+    if (amount >= 1 || now - lastRibbonDamageCueTime > 450) {
+      audio.playCue('ribbonDamage');
+      lastRibbonDamageCueTime = now;
+    }
   }
 }
 
@@ -165,6 +173,7 @@ function mutateGhost() {
   const loss = ribbonLoss.trueNameMissBase + g.mutationLevel * ribbonLoss.trueNameMissPerMutation;
   dropRibbon(loss, 9 + g.mutationLevel * 2);
   state.message = 'Dangerously close True Name rejected: the spelling curdles. Mallory mutates and bears down.';
+  audio.playCue('ghostMutation');
   burst(g.x, g.y, 14 + g.mutationLevel * 8);
 }
 
@@ -193,6 +202,7 @@ function applyWitnessCommand(word) {
   state.message = result.message;
 
   if (result.kind === 'out-of-range') {
+    audio.playCue('blocked');
     dropRibbon(result.loss, 5);
     return true;
   }
@@ -203,11 +213,13 @@ function applyWitnessCommand(word) {
   state.witness.lastJournal = result.journal;
 
   if (result.kind === 'changed') {
+    audio.playCue('accept');
     state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'witness');
     if (result.memoryState === 'truthful') state.clueFound = true;
     triggerScreenShake(6, 180);
     burst(state.witness.x, state.witness.y - 36, 18);
   } else {
+    audio.playCue('accept');
     triggerScreenShake(3, 120);
   }
 
@@ -220,6 +232,7 @@ function inspectNearby() {
 
   if (!inspectable) {
     state.message = 'Nothing nearby answers the ribbon. Step closer to paper, ink, or wood.';
+    audio.playCue('blocked');
     return false;
   }
 
@@ -229,6 +242,7 @@ function inspectNearby() {
   state.message = alreadyDiscovered
     ? `${inspectable.title}: already copied into the journal.`
     : inspectable.message;
+  audio.playCue(alreadyDiscovered ? 'commit' : 'accept');
   triggerScreenShake(alreadyDiscovered ? 2 : 4, 120);
   updateCasePhase();
   return true;
@@ -245,17 +259,20 @@ function applyGhostCommand(word) {
   state.message = result.message;
 
   if (result.kind === 'blocked') {
+    audio.playCue('blocked');
     dropRibbon(result.loss, 4);
     return true;
   }
 
   if (result.kind === 'out-of-context') {
+    audio.playCue('blocked');
     triggerScreenShake(2, 100);
     return true;
   }
 
   const g = state.ghost;
   dropRibbon(result.loss, result.command === 'BURN' ? 8 : 5);
+  audio.playCue(result.command.toLowerCase());
   triggerScreenShake(result.command === 'BURN' ? 7 : 4, 180);
 
   if (result.command === 'BURN') {
@@ -271,12 +288,14 @@ function applyGhostCommand(word) {
 
   if (result.command === 'BIND') {
     g.angry = false;
+    audio.stopPressure();
     g.boundUntil = performance.now() + result.duration;
     burst(g.x, g.y, 16);
   }
 
   if (result.command === 'LIE') {
     g.angry = false;
+    audio.stopPressure();
     g.luredUntil = performance.now() + result.duration;
     g.lure = {
       x: clamp(state.player.x + (state.player.x < canvas.width / 2 ? 170 : -170), 42, canvas.width - 42),
@@ -293,17 +312,21 @@ function commitWord() {
   state.typed = '';
 
   if (!word) return;
+  audio.playCue('commit');
 
   const trueNameAttempt = evaluateTrueNameAttempt(word, state.ghost.name);
 
   if (trueNameAttempt === 'exact' && state.ghost.active) {
     if (!state.doorOpen) {
       state.message = 'True Name blocked: Mallory hears it through the locked door, but the sealed room keeps its confession. ACCUSE Eddie, then OPEN the door.';
+      audio.playCue('blocked');
       dropRibbon(ribbonLoss.gatedWord, 4);
       return;
     }
 
     state.ghost.active = false;
+    audio.playCue('trueNameBanish');
+    audio.stopPressure();
     state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'ending-lead');
     state.message = 'True Name accepted. Mallory Vale points through the open door: Black Ribbon Press hired the killer.';
     updateCasePhase();
@@ -327,20 +350,24 @@ function commitWord() {
   if (commands[word]) {
     if (word === 'OPEN' && state.witness.memoryState !== 'cornered') {
       state.message = 'OPEN is blocked: the lock rattles, but Eddie still owns the missing confession. ACCUSE him first.';
+      audio.playCue('blocked');
       dropRibbon(ribbonLoss.gatedWord, 4);
       return;
     }
 
     state.message = `${word} is accepted. ${commands[word]}`;
+    audio.playCue('accept');
     triggerScreenShake(7, 220);
     if (word === 'OPEN') {
       state.doorOpen = true;
+      audio.playCue('doorOpen');
       state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'door-open');
       updateCasePhase();
     }
     return;
   }
 
+  audio.playCue('reject');
   dropRibbon(ribbonLoss.wrongWord, 7);
   state.message = `${word} is rejected. Wrong letters snag the ribbon, but the night gives you room to recover.`;
 }
@@ -381,9 +408,21 @@ function update(deltaTime) {
     }
 
     const pressure = getProximityPressure(distance(p, g), g);
+    const pressureIntensity = getPressureIntensity(pressure.level, {
+      active: g.active,
+      angry: g.angry,
+      bound: isBound,
+      lured: isLured,
+      muted: audio.isMuted(),
+      mutated: g.mutated,
+      mutationLevel: g.mutationLevel
+    });
+    audio.setPressureIntensity(pressureIntensity);
     if (!isBound && !isLured && pressure.drainRate > 0) {
       dropRibbon(pressure.drainRate, g.mutated ? 3.5 : 2);
     }
+  } else {
+    audio.stopPressure();
   }
 
   for (let i = state.particles.length - 1; i >= 0; i -= 1) {
@@ -898,7 +937,10 @@ function frame(now = performance.now()) {
   previousFrameTime = now;
 
   if (state.ribbon > 0) update(deltaTime);
-  else updateScreenShake(deltaTime);
+  else {
+    audio.stopPressure();
+    updateScreenShake(deltaTime);
+  }
   draw();
   updateStatusPanel();
   requestAnimationFrame(frame);
@@ -910,6 +952,8 @@ window.addEventListener('keydown', (event) => {
   const isGameMovement = isMovementCode(event.code) && !hasShortcutModifier;
   if (isGameMovement || [' ', 'Backspace', 'Escape', 'F2'].includes(key)) event.preventDefault();
 
+  if (!hasShortcutModifier) audio.resumeFromGesture();
+
   if (isGameMovement) {
     activeMovementCodes.add(event.code);
   }
@@ -917,12 +961,21 @@ window.addEventListener('keydown', (event) => {
   if (key === 'Escape') {
     state = initialState();
     activeMovementCodes.clear();
+    audio.stopPressure();
     return;
   }
 
   if (key === 'F2') {
     state.hardboiled = !state.hardboiled;
     state.message = state.hardboiled ? 'No backspace. No mercy.' : 'Backspace restored. The night softens by one notch.';
+    audio.playCue('commit');
+    return;
+  }
+
+  if ((key === 'm' || key === 'M') && !state.typed) {
+    const muted = audio.toggleMuted();
+    if (!muted) audio.resumeFromGesture();
+    state.message = muted ? 'Audio muted. The typewriter goes quiet.' : 'Audio on. The ribbon hums again.';
     return;
   }
 
@@ -939,6 +992,7 @@ window.addEventListener('keydown', (event) => {
   if (key === 'Backspace') {
     if (!state.hardboiled) state.typed = state.typed.slice(0, -1);
     else {
+      audio.playCue('blocked');
       dropRibbon(ribbonLoss.hardboiledBackspace, 4);
       state.message = 'Backspace is blocked in Hardboiled Mode. The ribbon frays, but only a little.';
     }
@@ -947,7 +1001,9 @@ window.addEventListener('keydown', (event) => {
 
   const character = getTypeableCharacter(event);
   if (character) {
-    state.typed = appendTypedCharacter(state.typed, character);
+    const nextTyped = appendTypedCharacter(state.typed, character);
+    if (nextTyped !== state.typed) audio.playCue('typeKey');
+    state.typed = nextTyped;
   }
 });
 
