@@ -104,3 +104,36 @@ canvas:focus-visible {
   outline: 3px solid var(--ghost);
   outline-offset: 2px;
 }
+
+.case-guide {
+  margin-top: 12px;
+  border: 1px solid rgba(140, 255, 193, 0.24);
+  background: rgba(5, 6, 7, 0.62);
+  color: rgba(215, 199, 161, 0.88);
+  box-shadow: 0 0 22px rgba(140, 255, 193, 0.06);
+}
+
+.case-guide summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  color: var(--ghost);
+  letter-spacing: 0.04em;
+}
+
+.case-guide summary:focus-visible {
+  outline: 3px solid var(--ghost);
+  outline-offset: 2px;
+}
+
+.case-guide ul {
+  margin: 0;
+  padding: 0 18px 14px 32px;
+}
+
+.case-guide li {
+  margin: 6px 0;
+}
+
+.case-guide code {
+  color: var(--amber);
+}

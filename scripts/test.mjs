@@ -379,6 +379,12 @@ assert.equal(
 );
 
 assert.equal(
+  getFirstCasePhase({ discoveredClueIds: ['receipt', 'witness'], witnessMemoryState: 'cornered', doorOpen: false, ghostActive: true }),
+  firstCasePhases.DOOR_READY,
+  'cornering Eddie should point the first case objective to the door word before the door opens'
+);
+
+assert.equal(
   getFirstCasePhase({ discoveredClueIds: ['receipt', 'witness'], witnessMemoryState: 'cornered', doorOpen: true, ghostActive: true }),
   firstCasePhases.CONFRONTATION,
   'opening the locked door should mark the Mallory Vale confrontation phase'

@@ -57,7 +57,7 @@ const inspectables = [
     id: 'typewriter',
     title: 'Haunted typewriter',
     journal: 'Typewriter: the E key sticks, as if begging to examine the room.',
-    message: 'The typewriter chatters: clues must be read, not bumped into.',
+    message: 'The typewriter chatters: arrows move only on an empty line; letters and spaces become commands.',
     x: 146,
     y: 350,
     range: 62
@@ -66,7 +66,7 @@ const inspectables = [
     id: 'door',
     title: 'Locked alley door',
     journal: "Door: fresh scratches match Mallory's nails; the wood is waiting for OPEN.",
-    message: 'The locked door smells of rain, roses, and burned newsprint. Eddie knows the word it obeys.',
+    message: 'The locked door will not open until Eddie is cornered. Inspect him, make him remember, then ACCUSE.',
     x: 858,
     y: 330,
     range: 64
@@ -75,7 +75,7 @@ const inspectables = [
     id: 'witness',
     title: 'Raincoat witness',
     journal: "Witness: Eddie Pike carried Mallory's receipt and flinches at FORGET, REMEMBER, and ACCUSE.",
-    message: "Eddie Pike hides under his raincoat. Type FORGET, REMEMBER, or ACCUSE while he can hear it.",
+    message: "Eddie Pike hides under his raincoat. Stand close; type REMEMBER, Enter, then ACCUSE when he cracks.",
     x: 562,
     y: 348,
     range: 68
@@ -103,7 +103,7 @@ const commands = {
 const initialState = () => ({
   player: { x: 140, y: 340, speed: 2.2 },
   typed: '',
-  message: 'Case one: Mallory Vale vanished after Eddie Pike drove her to a locked alley door.',
+  message: 'Case one: arrows move on an empty line. Empty Enter inspects; letters type commands.',
   ribbon: 100,
   hardboiled: false,
   clueFound: false,
@@ -231,7 +231,7 @@ function inspectNearby() {
   const inspectable = getNearbyInspectable();
 
   if (!inspectable) {
-    state.message = 'Nothing nearby answers the ribbon. Step closer to paper, ink, or wood.';
+    state.message = 'Nothing nearby answers. Leave the typed line empty, step closer with arrows, then press Enter.';
     audio.playCue('blocked');
     return false;
   }
@@ -318,7 +318,7 @@ function commitWord() {
 
   if (trueNameAttempt === 'exact' && state.ghost.active) {
     if (!state.doorOpen) {
-      state.message = 'True Name blocked: Mallory hears it through the locked door, but the sealed room keeps its confession. ACCUSE Eddie, then OPEN the door.';
+      state.message = 'True Name blocked: Mallory hears it, but the door is sealed. ACCUSE Eddie, then type OPEN.';
       audio.playCue('blocked');
       dropRibbon(ribbonLoss.gatedWord, 4);
       return;
@@ -349,7 +349,7 @@ function commitWord() {
 
   if (commands[word]) {
     if (word === 'OPEN' && state.witness.memoryState !== 'cornered') {
-      state.message = 'OPEN is blocked: the lock rattles, but Eddie still owns the missing confession. ACCUSE him first.';
+      state.message = 'OPEN is blocked: Eddie still owns the missing confession. Stand by him and type ACCUSE first.';
       audio.playCue('blocked');
       dropRibbon(ribbonLoss.gatedWord, 4);
       return;
@@ -369,7 +369,7 @@ function commitWord() {
 
   audio.playCue('reject');
   dropRibbon(ribbonLoss.wrongWord, 7);
-  state.message = `${word} is rejected. Wrong letters snag the ribbon, but the night gives you room to recover.`;
+  state.message = `${word} is rejected. Use clue words: REMEMBER, ACCUSE, OPEN, then MALLORY VALE.`;
 }
 
 function burst(x, y, count) {
@@ -889,7 +889,7 @@ function drawHud() {
   drawPixelText(`Typed: ${state.typed || '_'}`, 36, 88, 22, '#8cffc1');
   drawPixelText(state.message, 36, 120, 18, '#d7c7a1');
   drawPixelText(getFirstCaseObjective(state.casePhase), 36, 146, 15, '#8cffc1');
-  drawPixelText(`Hardboiled Mode: ${state.hardboiled ? 'ON' : 'OFF'}`, 720, 146, 15, '#d7c7a1');
+  drawPixelText(`F2 Hardboiled: ${state.hardboiled ? 'ON' : 'OFF'}`, 720, 146, 15, '#d7c7a1');
 
   const discoveredClues = getDiscoveredClues(journalItems, state.discoveredClueIds);
   drawPixelText('Journal:', 36, 172, 16, '#f2b35f');
@@ -911,7 +911,7 @@ function updateStatusPanel() {
   const journalSummary = discoveredClues.length
     ? discoveredClues.slice(-3).map((clue) => clue.journal).join(' ')
     : 'No clues copied yet.';
-  const typedSummary = state.typed ? `Typed ${state.typed}.` : 'No letters typed.';
+  const typedSummary = state.typed ? `Typed ${state.typed}. Enter commits typed words; Escape clears this typed line first.` : 'No letters typed. Arrow keys move; Enter inspects nearby clues; Escape restarts; F2 toggles Hardboiled Mode.';
 
   const nextStatusText = [
     `Ribbon ${Math.ceil(state.ribbon)} percent.`,
@@ -973,7 +973,7 @@ window.addEventListener('keydown', (event) => {
   if (key === 'Escape') {
     if (state.typed) {
       state.typed = '';
-      state.message = 'Typed line cleared. The case stays open.';
+      state.message = 'Typed line cleared. Escape restarts only when the line is already empty.';
       audio.playCue('commit');
       return;
     }
@@ -989,7 +989,7 @@ window.addEventListener('keydown', (event) => {
   if (key === 'F2') {
     if (shortcutEligible) {
       state.hardboiled = !state.hardboiled;
-      state.message = state.hardboiled ? 'No backspace. No mercy.' : 'Backspace restored. The night softens by one notch.';
+      state.message = state.hardboiled ? 'Hardboiled Mode on: Backspace is barred. Empty-line F2 toggles it off.' : 'Hardboiled Mode off: Backspace works again. Empty-line F2 toggles it.';
       audio.playCue('commit');
     }
     return;

@@ -59,9 +59,9 @@ Use this checklist when you want visual confirmation of the Canvas prototype wit
    ```
 
 2. Visit `http://localhost:8000/index.html` in a browser.
-3. Confirm the noir title card, controls help, and `Ghost Writer prototype canvas` appear.
+3. Confirm the noir title card, controls help, first-run case notes, and `Ghost Writer prototype canvas` appear.
 4. Click or tab to the canvas, press `A`, and confirm the HUD/status reflects one typed letter without a console error.
-5. Press `Backspace`, arrow keys, empty-line `Enter`, and `Esc` to confirm the page remains responsive.
+5. Press `Backspace`, arrow keys on an empty typed line, empty-line `Enter`, `Esc`, and empty-line `F2` to confirm the page remains responsive and shortcuts only fire from an empty typed line.
 
 An optional automated browser check is also available:
 
@@ -73,15 +73,18 @@ npm run smoke:browser
 
 ## Controls
 
-- Arrow keys on an empty typed line: move the detective
-- Letter keys: type into the haunted typewriter
-- Enter: commit the typed word, or inspect if the typewriter line is empty and you are near a clue
-- `FORGET`, `REMEMBER`, `ACCUSE`: change Eddie Pike's witness memory when close enough
+- Arrow keys on an empty typed line: move the detective; arrow keys do not move while a command is being typed
+- Letter keys and spaces: type into the haunted typewriter, including two-word commands like `MALLORY VALE`
+- Enter on an empty typed line: inspect nearby paper, ink, wood, or Eddie Pike
+- Enter on a typed line: commit the typed word or phrase
+- `FORGET`, `REMEMBER`, `ACCUSE`: change Eddie Pike's witness memory when close enough; the intended Mallory Vale route uses `REMEMBER`, then `ACCUSE`
+- `OPEN`: after Eddie is cornered, open the locked alley door
+- `MALLORY VALE`: after the door opens, commit Mallory's True Name to finish the current case slice
 - `BURN`, `BIND`, `LIE`: after the alley door opens, BURN hurts and enrages Mallory, BIND briefly pins her down, and LIE sends her after a decoy
 - Backspace: erase one character, unless Hardboiled Mode is enabled
-- F2 on an empty typed line: toggle Hardboiled Mode
-- Audio button below the canvas: toggle subtle generated audio feedback
-- Esc: clear a typed line, or restart the prototype when the typed line is empty
+- F2 on an empty typed line: toggle Hardboiled Mode; F2 does not toggle while text is typed
+- Audio button below the canvas: toggle subtle generated audio feedback; audio is not controlled by letter shortcuts
+- Esc: clear a typed line first; press Esc on an already-empty line to restart the prototype
 
 ## Project shape
 
