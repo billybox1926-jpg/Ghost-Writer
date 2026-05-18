@@ -27,6 +27,13 @@ const initialState = () => ({
     mutated: false,
     mutationLevel: 0
   },
+  screenShake: {
+    offset: { x: 0, y: 0 },
+    vector: { x: 0, y: 0 },
+    magnitude: 0,
+    duration: 0,
+    elapsed: 0
+  },
   particles: []
 });
 
@@ -38,6 +45,47 @@ function clamp(value, min, max) {
 
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function triggerScreenShake(magnitude = 8, duration = 240) {
+  const angle = Math.random() * Math.PI * 2;
+  const shake = state.screenShake;
+  shake.vector.x = Math.cos(angle);
+  shake.vector.y = Math.sin(angle);
+  shake.magnitude = Math.max(shake.magnitude, magnitude);
+  shake.duration = Math.max(shake.duration, duration);
+  shake.elapsed = 0;
+}
+
+function updateScreenShake(deltaTime) {
+  const shake = state.screenShake;
+
+  if (shake.elapsed >= shake.duration || shake.magnitude <= 0) {
+    shake.offset.x = 0;
+    shake.offset.y = 0;
+    return;
+  }
+
+  shake.elapsed = Math.min(shake.elapsed + deltaTime, shake.duration);
+  const linearDecay = 1 - (shake.elapsed / shake.duration);
+  const snap = Math.sin(shake.elapsed * 0.09) >= 0 ? 1 : -1;
+  shake.offset.x = shake.vector.x * shake.magnitude * linearDecay * snap;
+  shake.offset.y = shake.vector.y * shake.magnitude * linearDecay * -snap;
+
+  if (shake.elapsed >= shake.duration) {
+    shake.offset.x = 0;
+    shake.offset.y = 0;
+    shake.magnitude = 0;
+  }
+}
+
+function dropRibbon(amount, shakeMagnitude = 4 + amount * 0.45) {
+  const nextRibbon = clamp(state.ribbon - amount, 0, 100);
+
+  if (nextRibbon < state.ribbon) {
+    state.ribbon = nextRibbon;
+    triggerScreenShake(shakeMagnitude, 180 + Math.min(amount * 12, 180));
+  }
 }
 
 function normalizeName(value) {
@@ -99,7 +147,7 @@ function mutateGhost() {
   g.angry = true;
   g.mutated = true;
   g.mutationLevel = clamp(g.mutationLevel + 1, 1, 3);
-  state.ribbon = clamp(state.ribbon - (12 + g.mutationLevel * 4), 0, 100);
+  dropRibbon(12 + g.mutationLevel * 4, 10 + g.mutationLevel * 3);
   state.message = 'The botched True Name curdles. The ghost mutates and bears down.';
   burst(g.x, g.y, 14 + g.mutationLevel * 8);
 }
@@ -124,16 +172,17 @@ function commitWord() {
 
   if (commands[word]) {
     state.message = commands[word];
+    triggerScreenShake(7, 220);
     if (word === 'OPEN') state.doorOpen = true;
     if (state.ghost.active && ['BURN', 'BIND', 'LIE'].includes(word)) {
-      state.ribbon = clamp(state.ribbon - 6, 0, 100);
+      dropRibbon(6, 8);
       state.ghost.angry = word === 'BURN';
       burst(state.ghost.x, state.ghost.y, 18);
     }
     return;
   }
 
-  state.ribbon = clamp(state.ribbon - 10, 0, 100);
+  dropRibbon(10, 8);
   state.message = 'Wrong letters snag the ribbon. The typebars twitch in pain.';
 }
 
@@ -149,7 +198,9 @@ function burst(x, y, count) {
   }
 }
 
-function update() {
+function update(deltaTime) {
+  updateScreenShake(deltaTime);
+
   const p = state.player;
   const dx = Number(keys.has('ArrowRight') || keys.has('d')) - Number(keys.has('ArrowLeft') || keys.has('a'));
   const dy = Number(keys.has('ArrowDown') || keys.has('s')) - Number(keys.has('ArrowUp') || keys.has('w'));
@@ -173,7 +224,7 @@ function update() {
 
     if (distance(p, g) < 120) {
       const drainRate = g.mutated ? 0.11 + g.mutationLevel * 0.045 : (g.angry ? 0.08 : 0.035);
-      state.ribbon = clamp(state.ribbon - drainRate, 0, 100);
+      dropRibbon(drainRate, g.mutated ? 3.5 : 2);
     }
   }
 
@@ -190,6 +241,8 @@ function drawPixelText(text, x, y, size = 16, color = '#d7c7a1') {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(state.screenShake.offset.x, state.screenShake.offset.y);
   drawCity();
   drawSceneObjects();
   drawPlayer();
@@ -203,6 +256,7 @@ function draw() {
     drawPixelText('THE RIBBON SNAPS', 348, 260, 34, '#f2b35f');
     drawPixelText('Press R to rethread the night.', 354, 296, 18, '#d7c7a1');
   }
+  ctx.restore();
 }
 
 function drawCity() {
@@ -324,8 +378,14 @@ function drawHud() {
   drawPixelText(state.message, 36, 120, 18, '#d7c7a1');
 }
 
-function frame() {
-  if (state.ribbon > 0) update();
+let previousFrameTime = performance.now();
+
+function frame(now = performance.now()) {
+  const deltaTime = now - previousFrameTime;
+  previousFrameTime = now;
+
+  if (state.ribbon > 0) update(deltaTime);
+  else updateScreenShake(deltaTime);
   draw();
   requestAnimationFrame(frame);
 }
@@ -353,7 +413,7 @@ window.addEventListener('keydown', (event) => {
   if (key === 'Backspace') {
     if (!state.hardboiled) state.typed = state.typed.slice(0, -1);
     else {
-      state.ribbon = clamp(state.ribbon - 3, 0, 100);
+      dropRibbon(3, 5);
       state.message = 'Hardboiled Mode has no backspace key.';
     }
     return;
