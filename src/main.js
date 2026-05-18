@@ -23,7 +23,9 @@ const initialState = () => ({
     y: 285,
     name: 'MALLORY VALE',
     active: true,
-    angry: false
+    angry: false,
+    mutated: false,
+    mutationLevel: 0
   },
   particles: []
 });
@@ -36,6 +38,70 @@ function clamp(value, min, max) {
 
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function normalizeName(value) {
+  return value.trim().toUpperCase().replace(/\s+/g, ' ');
+}
+
+function nameMatchRatio(attempt, trueName) {
+  const typed = normalizeName(attempt);
+  const target = normalizeName(trueName);
+  const longest = Math.max(typed.length, target.length);
+
+  if (!longest) return 1;
+
+  const previous = Array.from({ length: target.length + 1 }, (_, index) => index);
+  const current = Array.from({ length: target.length + 1 }, () => 0);
+
+  for (let typedIndex = 1; typedIndex <= typed.length; typedIndex += 1) {
+    current[0] = typedIndex;
+
+    for (let targetIndex = 1; targetIndex <= target.length; targetIndex += 1) {
+      const substitutionCost = typed[typedIndex - 1] === target[targetIndex - 1] ? 0 : 1;
+      current[targetIndex] = Math.min(
+        previous[targetIndex] + 1,
+        current[targetIndex - 1] + 1,
+        previous[targetIndex - 1] + substitutionCost
+      );
+    }
+
+    previous.splice(0, previous.length, ...current);
+  }
+
+  return (longest - previous[target.length]) / longest;
+}
+
+function hasIncorrectCharacterSequence(attempt, trueName) {
+  const sharedLength = Math.min(attempt.length, trueName.length);
+
+  for (let index = 0; index < sharedLength; index += 1) {
+    if (attempt[index] !== trueName[index]) return true;
+  }
+
+  return attempt.length > trueName.length;
+}
+
+function isMisspelledTrueName(attempt, trueName) {
+  const typed = normalizeName(attempt);
+  const target = normalizeName(trueName);
+
+  return (
+    typed !== target
+    && typed.length >= Math.ceil(target.length * 0.7)
+    && hasIncorrectCharacterSequence(typed, target)
+    && nameMatchRatio(typed, target) >= 0.7
+  );
+}
+
+function mutateGhost() {
+  const g = state.ghost;
+  g.angry = true;
+  g.mutated = true;
+  g.mutationLevel = clamp(g.mutationLevel + 1, 1, 3);
+  state.ribbon = clamp(state.ribbon - (12 + g.mutationLevel * 4), 0, 100);
+  state.message = 'The botched True Name curdles. The ghost mutates and bears down.';
+  burst(g.x, g.y, 14 + g.mutationLevel * 8);
 }
 
 function commitWord() {
@@ -51,10 +117,8 @@ function commitWord() {
     return;
   }
 
-  if (state.ghost.active && state.ghost.name.startsWith(word) && word.length > 3) {
-    state.ghost.angry = true;
-    state.ribbon = clamp(state.ribbon - 18, 0, 100);
-    state.message = 'Close is cruel. The ghost mutates around the misspelling.';
+  if (state.ghost.active && isMisspelledTrueName(word, state.ghost.name)) {
+    mutateGhost();
     return;
   }
 
@@ -98,8 +162,19 @@ function update() {
     state.message = 'Ink blooms on a receipt: MALLORY VALE. A True Name?';
   }
 
-  if (state.ghost.active && distance(p, state.ghost) < 120) {
-    state.ribbon = clamp(state.ribbon - (state.ghost.angry ? 0.08 : 0.035), 0, 100);
+  if (state.ghost.active) {
+    const g = state.ghost;
+    if (g.mutated) {
+      const ghostPressure = 0.38 + g.mutationLevel * 0.12;
+      const ghostDistance = Math.max(distance(g, p), 1);
+      g.x = clamp(g.x + ((p.x - g.x) / ghostDistance) * ghostPressure, 42, canvas.width - 42);
+      g.y = clamp(g.y + ((p.y - g.y) / ghostDistance) * ghostPressure, 210, canvas.height - 92);
+    }
+
+    if (distance(p, g) < 120) {
+      const drainRate = g.mutated ? 0.11 + g.mutationLevel * 0.045 : (g.angry ? 0.08 : 0.035);
+      state.ribbon = clamp(state.ribbon - drainRate, 0, 100);
+    }
   }
 
   state.particles = state.particles
@@ -192,14 +267,40 @@ function drawGhost() {
   if (!state.ghost.active) return;
   const g = state.ghost;
   const pulse = Math.sin(performance.now() / 180) * 7;
-  ctx.fillStyle = state.ghost.angry ? 'rgba(157, 40, 50, 0.72)' : 'rgba(140, 255, 193, 0.42)';
+  const mutationPulse = g.mutated ? Math.sin(performance.now() / 55) * (3 + g.mutationLevel) : 0;
+  ctx.fillStyle = g.mutated ? 'rgba(199, 27, 61, 0.78)' : (g.angry ? 'rgba(157, 40, 50, 0.72)' : 'rgba(140, 255, 193, 0.42)');
   ctx.beginPath();
-  ctx.ellipse(g.x, g.y + pulse, state.ghost.angry ? 48 : 34, state.ghost.angry ? 70 : 54, 0, 0, Math.PI * 2);
+  ctx.ellipse(
+    g.x + mutationPulse,
+    g.y + pulse,
+    g.mutated ? 42 + g.mutationLevel * 8 : (g.angry ? 48 : 34),
+    g.mutated ? 64 + g.mutationLevel * 10 : (g.angry ? 70 : 54),
+    g.mutated ? Math.sin(performance.now() / 120) * 0.18 : 0,
+    0,
+    Math.PI * 2
+  );
   ctx.fill();
+
+  if (g.mutated) {
+    ctx.strokeStyle = 'rgba(140, 255, 193, 0.68)';
+    ctx.lineWidth = 2;
+    for (let spike = 0; spike < 9; spike += 1) {
+      const angle = (Math.PI * 2 * spike) / 9 + performance.now() / 360;
+      const inner = 34 + g.mutationLevel * 7;
+      const outer = inner + 13 + ((spike * 5) % 11);
+      ctx.beginPath();
+      ctx.moveTo(g.x + Math.cos(angle) * inner, g.y + pulse + Math.sin(angle) * inner);
+      ctx.lineTo(g.x + Math.cos(angle) * outer, g.y + pulse + Math.sin(angle) * outer);
+      ctx.stroke();
+    }
+    ctx.lineWidth = 1;
+    drawPixelText('MISSPELLED NAME', g.x - 66, g.y + 86, 14, '#c71b3d');
+  }
+
   ctx.fillStyle = '#050607';
-  ctx.fillRect(g.x - 12, g.y - 4 + pulse, 7, 7);
-  ctx.fillRect(g.x + 8, g.y - 4 + pulse, 7, 7);
-  drawPixelText(state.clueFound ? 'M _ _ _ _ _ Y  V _ _ E' : 'UNKNOWN NAME', g.x - 58, g.y - 76, 15, '#d7c7a1');
+  ctx.fillRect(g.x - 12 + mutationPulse, g.y - 4 + pulse, 7, 7);
+  ctx.fillRect(g.x + 8 + mutationPulse, g.y - 4 + pulse, 7, 7);
+  drawPixelText(state.clueFound ? 'M _ _ _ _ _ Y  V _ _ E' : 'UNKNOWN NAME', g.x - 58, g.y - 76, 15, g.mutated ? '#f2b35f' : '#d7c7a1');
 }
 
 function drawParticles() {
