@@ -1,7 +1,7 @@
 import { firstCasePhases, getFirstCaseObjective, getFirstCasePhase } from './case-flow.js';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from './screen-shake.js';
-import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, normalizeCommittedWord } from './input-rules.js';
+import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isEmptyLineShortcutEligible, isModifiedShortcutEvent, isMovementCode, normalizeCommittedWord } from './input-rules.js';
 import { clamp, evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from './semantic-rules.js';
 import { createAudioEngine, getPressureIntensity } from './audio-engine.js';
 
@@ -606,7 +606,7 @@ function drawSceneObjects() {
     ctx.stroke();
 
     if (isNearby) {
-      drawPixelText('E / Enter: inspect', inspectable.x - 54, inspectable.y - 28, 14, noirPalette.ghost);
+      drawPixelText('Empty Enter: inspect', inspectable.x - 62, inspectable.y - 28, 14, noirPalette.ghost);
     }
   }
   ctx.lineWidth = 1;
@@ -948,34 +948,50 @@ function frame(now = performance.now()) {
 
 window.addEventListener('keydown', (event) => {
   const key = event.key;
-  const hasShortcutModifier = event.ctrlKey || event.metaKey || event.altKey;
-  const isGameMovement = isMovementCode(event.code) && !hasShortcutModifier;
-  if (isGameMovement || [' ', 'Backspace', 'Escape', 'F2'].includes(key)) event.preventDefault();
+  const character = getTypeableCharacter(event);
 
-  if (!hasShortcutModifier) audio.resumeFromGesture();
+  if (character) {
+    if (key === ' ') event.preventDefault();
+    audio.resumeFromGesture();
+    const nextTyped = appendTypedCharacter(state.typed, character);
+    if (nextTyped !== state.typed) audio.playCue('typeKey');
+    state.typed = nextTyped;
+    return;
+  }
+
+  const shortcutEligible = isEmptyLineShortcutEligible(event, state.typed);
+  const isGameMovement = shortcutEligible && isMovementCode(event.code);
+  if (isGameMovement || ['Backspace', 'Escape', 'F2'].includes(key)) event.preventDefault();
+
+  if (!isModifiedShortcutEvent(event)) audio.resumeFromGesture();
 
   if (isGameMovement) {
     activeMovementCodes.add(event.code);
+    return;
   }
 
   if (key === 'Escape') {
-    state = initialState();
-    activeMovementCodes.clear();
-    audio.stopPressure();
+    if (state.typed) {
+      state.typed = '';
+      state.message = 'Typed line cleared. The case stays open.';
+      audio.playCue('commit');
+      return;
+    }
+
+    if (shortcutEligible) {
+      state = initialState();
+      activeMovementCodes.clear();
+      audio.stopPressure();
+    }
     return;
   }
 
   if (key === 'F2') {
-    state.hardboiled = !state.hardboiled;
-    state.message = state.hardboiled ? 'No backspace. No mercy.' : 'Backspace restored. The night softens by one notch.';
-    audio.playCue('commit');
-    return;
-  }
-
-  if ((key === 'm' || key === 'M') && !state.typed) {
-    const muted = audio.toggleMuted();
-    if (!muted) audio.resumeFromGesture();
-    state.message = muted ? 'Audio muted. The typewriter goes quiet.' : 'Audio on. The ribbon hums again.';
+    if (shortcutEligible) {
+      state.hardboiled = !state.hardboiled;
+      state.message = state.hardboiled ? 'No backspace. No mercy.' : 'Backspace restored. The night softens by one notch.';
+      audio.playCue('commit');
+    }
     return;
   }
 
@@ -985,10 +1001,6 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
-  if ((key === 'e' || key === 'E') && !state.typed) {
-    if (inspectNearby()) return;
-  }
-
   if (key === 'Backspace') {
     if (!state.hardboiled) state.typed = state.typed.slice(0, -1);
     else {
@@ -996,14 +1008,6 @@ window.addEventListener('keydown', (event) => {
       dropRibbon(ribbonLoss.hardboiledBackspace, 4);
       state.message = 'Backspace is blocked in Hardboiled Mode. The ribbon frays, but only a little.';
     }
-    return;
-  }
-
-  const character = getTypeableCharacter(event);
-  if (character) {
-    const nextTyped = appendTypedCharacter(state.typed, character);
-    if (nextTyped !== state.typed) audio.playCue('typeKey');
-    state.typed = nextTyped;
   }
 });
 

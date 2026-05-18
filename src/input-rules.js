@@ -4,13 +4,9 @@ export const maxTypedCharacters = 24;
 
 export const movementCodeMap = {
   ArrowUp: 'up',
-  KeyW: 'up',
   ArrowDown: 'down',
-  KeyS: 'down',
   ArrowLeft: 'left',
-  KeyA: 'left',
-  ArrowRight: 'right',
-  KeyD: 'right'
+  ArrowRight: 'right'
 };
 
 export function isMovementCode(code) {
@@ -19,28 +15,46 @@ export function isMovementCode(code) {
 
 export function getMovementAxis(activeCodes) {
   return {
-    dx: Number(activeCodes.has('ArrowRight') || activeCodes.has('KeyD'))
-      - Number(activeCodes.has('ArrowLeft') || activeCodes.has('KeyA')),
-    dy: Number(activeCodes.has('ArrowDown') || activeCodes.has('KeyS'))
-      - Number(activeCodes.has('ArrowUp') || activeCodes.has('KeyW'))
+    dx: Number(activeCodes.has('ArrowRight')) - Number(activeCodes.has('ArrowLeft')),
+    dy: Number(activeCodes.has('ArrowDown')) - Number(activeCodes.has('ArrowUp'))
   };
+}
+
+export function isModifiedShortcutEvent(event) {
+  return Boolean(event.ctrlKey || event.metaKey || event.altKey);
+}
+
+export function isCommandEntryKeyEvent(event) {
+  return Boolean(
+    !event.isComposing
+      && !isModifiedShortcutEvent(event)
+      && event.key !== 'Dead'
+      && /^[a-zA-Z ]$/.test(event.key)
+  );
 }
 
 export function isBlockedTextInputEvent(event) {
   return Boolean(
     event.isComposing
       || event.repeat
-      || event.ctrlKey
-      || event.metaKey
-      || event.altKey
+      || isModifiedShortcutEvent(event)
       || event.key === 'Dead'
   );
 }
 
 export function getTypeableCharacter(event) {
-  if (isBlockedTextInputEvent(event)) return '';
-  if (!/^[a-zA-Z ]$/.test(event.key)) return '';
+  if (isBlockedTextInputEvent(event) || !isCommandEntryKeyEvent(event)) return '';
   return event.key.toUpperCase();
+}
+
+export function isEmptyLineShortcutEligible(event, currentTyped) {
+  return Boolean(
+    !currentTyped.trim()
+      && !event.repeat
+      && !event.isComposing
+      && !isModifiedShortcutEvent(event)
+      && !isCommandEntryKeyEvent(event)
+  );
 }
 
 export function appendTypedCharacter(currentTyped, character) {

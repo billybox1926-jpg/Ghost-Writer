@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { getFirstCaseObjective, getFirstCasePhase, firstCasePhases } from '../src/case-flow.js';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
-import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
+import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isCommandEntryKeyEvent, isEmptyLineShortcutEligible, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
 import { evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from '../src/semantic-rules.js';
 import { audioCueNames, getNextMuteState, getPressureIntensity } from '../src/audio-engine.js';
 
@@ -99,14 +99,72 @@ assert.equal(
   'dead-key composition should be ignored until it resolves to a printable key'
 );
 
+
+assert.equal(
+  isCommandEntryKeyEvent({ key: 'm', code: 'KeyM' }),
+  true,
+  'letter keys should be treated as command entry before shortcut handling'
+);
+
+assert.equal(
+  isCommandEntryKeyEvent({ key: ' ', code: 'Space' }),
+  true,
+  'space should be treated as command entry for multi-word commands'
+);
+
+assert.equal(
+  isEmptyLineShortcutEligible({ key: 'm', code: 'KeyM' }, ''),
+  false,
+  'audio letter shortcuts should not steal the first letter of MALLORY VALE'
+);
+
+assert.equal(
+  isEmptyLineShortcutEligible({ key: 'e', code: 'KeyE' }, ''),
+  false,
+  'inspect letter shortcuts should not steal command-entry letters on an empty line'
+);
+
+assert.equal(
+  isEmptyLineShortcutEligible({ key: 'ArrowUp', code: 'ArrowUp' }, ''),
+  true,
+  'non-text movement keys should remain eligible on an empty command line'
+);
+
+assert.equal(
+  isEmptyLineShortcutEligible({ key: 'ArrowUp', code: 'ArrowUp' }, 'OPEN'),
+  false,
+  'movement shortcuts should not fire while a command is being typed'
+);
+
+assert.equal(
+  isEmptyLineShortcutEligible({ key: 'Enter', code: 'Enter' }, ''),
+  true,
+  'empty-line Enter should remain eligible for contextual inspection'
+);
+
+for (const commandWord of ['REMEMBER', 'ACCUSE', 'FORGET', 'BURN', 'BIND', 'LIE', 'OPEN', 'MALLORY VALE']) {
+  const typed = [...commandWord].reduce((buffer, key) => appendTypedCharacter(buffer, getTypeableCharacter({ key })), '');
+  assert.equal(
+    typed,
+    commandWord,
+    `${commandWord} should be typeable without letter shortcuts consuming any characters`
+  );
+}
+
 assert.equal(
   isMovementCode('KeyW'),
+  false,
+  'letter keys should stay reserved for command entry instead of movement shortcuts'
+);
+
+assert.equal(
+  isMovementCode('ArrowUp'),
   true,
-  'WASD physical codes should be recognized for movement even when key text differs'
+  'arrow keys should remain recognized for movement shortcuts'
 );
 
 assert.deepEqual(
-  getMovementAxis(new Set(['KeyD', 'ArrowUp'])),
+  getMovementAxis(new Set(['ArrowRight', 'ArrowUp'])),
   { dx: 1, dy: -1 },
   'movement state should derive a stable axis from active physical keys'
 );
