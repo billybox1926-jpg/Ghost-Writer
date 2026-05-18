@@ -1,7 +1,7 @@
 import { firstCasePhases, getFirstCaseObjective, getFirstCasePhase } from './case-flow.js';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from './screen-shake.js';
-import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, normalizeCommittedWord } from './input-rules.js';
+import { appendTypedCharacter, canUseEmptyLineShortcut, getMovementAxis, getTypeableCharacter, isMovementCode, normalizeCommittedWord } from './input-rules.js';
 import { clamp, evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from './semantic-rules.js';
 import { createAudioEngine, getPressureIntensity } from './audio-engine.js';
 
@@ -606,7 +606,7 @@ function drawSceneObjects() {
     ctx.stroke();
 
     if (isNearby) {
-      drawPixelText('E / Enter: inspect', inspectable.x - 54, inspectable.y - 28, 14, noirPalette.ghost);
+      drawPixelText('Empty Enter: inspect', inspectable.x - 72, inspectable.y - 28, 14, noirPalette.ghost);
     }
   }
   ctx.lineWidth = 1;
@@ -950,43 +950,49 @@ window.addEventListener('keydown', (event) => {
   const key = event.key;
   const hasShortcutModifier = event.ctrlKey || event.metaKey || event.altKey;
   const isGameMovement = isMovementCode(event.code) && !hasShortcutModifier;
+  const canUseEmptyLineControls = canUseEmptyLineShortcut(event, state.typed);
+
   if (isGameMovement || [' ', 'Backspace', 'Escape', 'F2'].includes(key)) event.preventDefault();
 
   if (!hasShortcutModifier) audio.resumeFromGesture();
 
-  if (isGameMovement) {
-    activeMovementCodes.add(event.code);
+  const character = getTypeableCharacter(event);
+  if (character) {
+    const nextTyped = appendTypedCharacter(state.typed, character);
+    if (nextTyped !== state.typed) audio.playCue('typeKey');
+    state.typed = nextTyped;
+    return;
   }
 
-  if (key === 'Escape') {
+  if (isGameMovement && canUseEmptyLineControls) {
+    activeMovementCodes.add(event.code);
+    return;
+  }
+
+  if (key === 'Escape' && canUseEmptyLineControls) {
     state = initialState();
     activeMovementCodes.clear();
     audio.stopPressure();
     return;
   }
 
-  if (key === 'F2') {
+  if (key === 'Escape') {
+    state.typed = '';
+    activeMovementCodes.clear();
+    return;
+  }
+
+  if (key === 'F2' && canUseEmptyLineControls) {
     state.hardboiled = !state.hardboiled;
     state.message = state.hardboiled ? 'No backspace. No mercy.' : 'Backspace restored. The night softens by one notch.';
     audio.playCue('commit');
     return;
   }
 
-  if ((key === 'm' || key === 'M') && !state.typed) {
-    const muted = audio.toggleMuted();
-    if (!muted) audio.resumeFromGesture();
-    state.message = muted ? 'Audio muted. The typewriter goes quiet.' : 'Audio on. The ribbon hums again.';
-    return;
-  }
-
   if (key === 'Enter') {
-    if (!state.typed.trim() && inspectNearby()) return;
+    if (canUseEmptyLineControls && inspectNearby()) return;
     commitWord();
     return;
-  }
-
-  if ((key === 'e' || key === 'E') && !state.typed) {
-    if (inspectNearby()) return;
   }
 
   if (key === 'Backspace') {
@@ -996,14 +1002,6 @@ window.addEventListener('keydown', (event) => {
       dropRibbon(ribbonLoss.hardboiledBackspace, 4);
       state.message = 'Backspace is blocked in Hardboiled Mode. The ribbon frays, but only a little.';
     }
-    return;
-  }
-
-  const character = getTypeableCharacter(event);
-  if (character) {
-    const nextTyped = appendTypedCharacter(state.typed, character);
-    if (nextTyped !== state.typed) audio.playCue('typeKey');
-    state.typed = nextTyped;
   }
 });
 

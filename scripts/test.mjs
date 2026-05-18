@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { getFirstCaseObjective, getFirstCasePhase, firstCasePhases } from '../src/case-flow.js';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
-import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
+import { appendTypedCharacter, canUseEmptyLineShortcut, getMovementAxis, getTypeableCharacter, isCommandEntryEvent, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
 import { evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from '../src/semantic-rules.js';
 import { audioCueNames, getNextMuteState, getPressureIntensity } from '../src/audio-engine.js';
 
@@ -99,16 +99,62 @@ assert.equal(
   'dead-key composition should be ignored until it resolves to a printable key'
 );
 
+
+assert.equal(
+  isCommandEntryEvent({ key: 'M' }),
+  true,
+  'M should be treated as command entry so MALLORY VALE can start typing instead of muting audio'
+);
+
+assert.equal(
+  canUseEmptyLineShortcut({ key: 'F2' }, ''),
+  true,
+  'non-printable shortcuts should be eligible when the typed command line is empty'
+);
+
+assert.equal(
+  canUseEmptyLineShortcut({ key: 'F2' }, 'OPEN'),
+  false,
+  'shortcuts should not fire while a command word is being typed'
+);
+
+assert.equal(
+  canUseEmptyLineShortcut({ key: 'm' }, ''),
+  false,
+  'printable letter keys should be reserved for typing even on an empty command line'
+);
+
+assert.equal(
+  canUseEmptyLineShortcut({ key: 'e' }, ''),
+  false,
+  'inspect letters should not steal command-entry keys from the typewriter buffer'
+);
+
+for (const word of ['REMEMBER', 'ACCUSE', 'FORGET', 'BURN', 'BIND', 'LIE', 'OPEN', 'MALLORY VALE']) {
+  const typed = Array.from(word).reduce((buffer, key) => appendTypedCharacter(buffer, getTypeableCharacter({ key })), '');
+  assert.equal(
+    typed,
+    word,
+    `${word} should remain typeable without shortcut filtering`
+  );
+}
+
 assert.equal(
   isMovementCode('KeyW'),
+  false,
+  'WASD letter keys should be reserved for typing commands instead of movement shortcuts'
+);
+
+assert.equal(
+  isMovementCode('ArrowUp'),
   true,
-  'WASD physical codes should be recognized for movement even when key text differs'
+  'arrow keys should remain movement shortcuts'
 );
 
 assert.deepEqual(
-  getMovementAxis(new Set(['KeyD', 'ArrowUp'])),
+  getMovementAxis(new Set(['ArrowRight', 'ArrowUp'])),
   { dx: 1, dy: -1 },
-  'movement state should derive a stable axis from active physical keys'
+  'movement state should derive a stable axis from active arrow keys'
 );
 
 assert.equal(

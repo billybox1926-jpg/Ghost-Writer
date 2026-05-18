@@ -60,8 +60,8 @@ Use this checklist when you want visual confirmation of the Canvas prototype wit
 
 2. Visit `http://localhost:8000/index.html` in a browser.
 3. Confirm the noir title card, controls help, and `Ghost Writer prototype canvas` appear.
-4. Click or tab to the canvas, press `A`, and confirm the HUD/status reflects one typed letter without a console error.
-5. Press `Backspace`, `E`, arrow keys or WASD, and `Esc` to confirm the page remains responsive.
+4. Click or tab to the canvas, press `A`, and confirm the HUD/status reflects one typed letter without moving or causing a console error.
+5. Press `Backspace`, empty-line `Enter`, arrow keys, and `Esc` to confirm the page remains responsive.
 
 An optional automated browser check is also available:
 
@@ -73,16 +73,15 @@ npm run smoke:browser
 
 ## Controls
 
-- Arrow keys or WASD: move the detective
-- Letter keys: type into the haunted typewriter
+- Arrow keys: move the detective when the typewriter line is empty
+- Letter keys and spaces: type into the haunted typewriter without triggering shortcuts
 - Enter: commit the typed word, or inspect if the typewriter line is empty and you are near a clue
-- E: inspect a nearby clue when the typewriter line is empty
 - `FORGET`, `REMEMBER`, `ACCUSE`: change Eddie Pike's witness memory when close enough
 - `BURN`, `BIND`, `LIE`: after the alley door opens, BURN hurts and enrages Mallory, BIND briefly pins her down, and LIE sends her after a decoy
 - Backspace: erase one character, unless Hardboiled Mode is enabled
-- F2: toggle Hardboiled Mode
-- M while the typed line is empty, or the Audio button below the canvas: toggle subtle generated audio feedback
-- Esc: restart the prototype
+- F2 while the typed line is empty: toggle Hardboiled Mode
+- Audio button below the canvas: toggle subtle generated audio feedback
+- Esc while the typed line is empty: restart the prototype; Esc while typing clears the current line
 
 ## Project shape
 
