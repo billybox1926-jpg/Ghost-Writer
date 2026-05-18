@@ -1,0 +1,73 @@
+:root {
+  color-scheme: dark;
+  --ink: #050607;
+  --paper: #d7c7a1;
+  --amber: #f2b35f;
+  --ghost: #8cffc1;
+  --blood: #9d2832;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #172019, var(--ink) 62%);
+  color: var(--paper);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.shell {
+  width: min(100vw, 1080px);
+  margin: 0 auto;
+  padding: 18px;
+}
+
+.title-card {
+  border: 1px solid rgba(242, 179, 95, 0.35);
+  background: rgba(5, 6, 7, 0.72);
+  padding: 16px 18px;
+  box-shadow: 0 0 36px rgba(140, 255, 193, 0.08);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--amber);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 8vw, 5rem);
+  line-height: 0.9;
+  text-shadow: 0 0 14px rgba(140, 255, 193, 0.25);
+}
+
+canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin-top: 16px;
+  border: 2px solid rgba(215, 199, 161, 0.32);
+  background: #080a09;
+  image-rendering: pixelated;
+}
+
+.hud-help {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  color: rgba(215, 199, 161, 0.82);
+}
+
+.hud-help p {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid rgba(215, 199, 161, 0.18);
+  background: rgba(0, 0, 0, 0.25);
+}
