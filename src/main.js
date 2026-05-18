@@ -1,3 +1,5 @@
+import { clamp, evaluateTrueNameAttempt, getRibbonDrop } from './semantic-rules.js';
+
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
 
@@ -39,10 +41,6 @@ const initialState = () => ({
 
 let state = initialState();
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
 function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
@@ -80,66 +78,12 @@ function updateScreenShake(deltaTime) {
 }
 
 function dropRibbon(amount, shakeMagnitude = 4 + amount * 0.45) {
-  const nextRibbon = clamp(state.ribbon - amount, 0, 100);
+  const result = getRibbonDrop(state.ribbon, amount);
 
-  if (nextRibbon < state.ribbon) {
-    state.ribbon = nextRibbon;
+  if (result.dropped) {
+    state.ribbon = result.ribbon;
     triggerScreenShake(shakeMagnitude, 180 + Math.min(amount * 12, 180));
   }
-}
-
-function normalizeName(value) {
-  return value.trim().toUpperCase().replace(/\s+/g, ' ');
-}
-
-function nameMatchRatio(attempt, trueName) {
-  const typed = normalizeName(attempt);
-  const target = normalizeName(trueName);
-  const longest = Math.max(typed.length, target.length);
-
-  if (!longest) return 1;
-
-  const previous = Array.from({ length: target.length + 1 }, (_, index) => index);
-  const current = Array.from({ length: target.length + 1 }, () => 0);
-
-  for (let typedIndex = 1; typedIndex <= typed.length; typedIndex += 1) {
-    current[0] = typedIndex;
-
-    for (let targetIndex = 1; targetIndex <= target.length; targetIndex += 1) {
-      const substitutionCost = typed[typedIndex - 1] === target[targetIndex - 1] ? 0 : 1;
-      current[targetIndex] = Math.min(
-        previous[targetIndex] + 1,
-        current[targetIndex - 1] + 1,
-        previous[targetIndex - 1] + substitutionCost
-      );
-    }
-
-    previous.splice(0, previous.length, ...current);
-  }
-
-  return (longest - previous[target.length]) / longest;
-}
-
-function hasIncorrectCharacterSequence(attempt, trueName) {
-  const sharedLength = Math.min(attempt.length, trueName.length);
-
-  for (let index = 0; index < sharedLength; index += 1) {
-    if (attempt[index] !== trueName[index]) return true;
-  }
-
-  return attempt.length > trueName.length;
-}
-
-function isMisspelledTrueName(attempt, trueName) {
-  const typed = normalizeName(attempt);
-  const target = normalizeName(trueName);
-
-  return (
-    typed !== target
-    && typed.length >= Math.ceil(target.length * 0.7)
-    && hasIncorrectCharacterSequence(typed, target)
-    && nameMatchRatio(typed, target) >= 0.7
-  );
 }
 
 function mutateGhost() {
@@ -158,14 +102,14 @@ function commitWord() {
 
   if (!word) return;
 
-  if (word === state.ghost.name && state.ghost.active) {
+  if (evaluateTrueNameAttempt(word, state.ghost.name) === 'exact' && state.ghost.active) {
     state.ghost.active = false;
     state.message = 'True Name accepted. The dead thing folds into punctuation.';
     burst(state.ghost.x, state.ghost.y, 42);
     return;
   }
 
-  if (state.ghost.active && isMisspelledTrueName(word, state.ghost.name)) {
+  if (state.ghost.active && evaluateTrueNameAttempt(word, state.ghost.name) === 'misspelled') {
     mutateGhost();
     return;
   }
