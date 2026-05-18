@@ -52,6 +52,7 @@ The smoke test checks that the core files exist and contain the expected prototy
 - Enter: commit the typed word, or inspect if the typewriter line is empty and you are near a clue
 - E: inspect a nearby clue when the typewriter line is empty
 - `FORGET`, `REMEMBER`, `ACCUSE`: change Eddie Pike's witness memory when close enough
+- `BURN`, `BIND`, `LIE`: after the alley door opens, BURN hurts and enrages Mallory, BIND briefly pins her down, and LIE sends her after a decoy
 - Backspace: erase one character, unless Hardboiled Mode is enabled
 - F2: toggle Hardboiled Mode
 - Esc: restart the prototype

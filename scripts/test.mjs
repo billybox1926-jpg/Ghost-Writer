@@ -3,7 +3,7 @@ import { getFirstCaseObjective, getFirstCasePhase, firstCasePhases } from '../sr
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
-import { evaluateTrueNameAttempt, getRibbonDrop, getWitnessCommandResult } from '../src/semantic-rules.js';
+import { evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from '../src/semantic-rules.js';
 
 const trueName = 'MALLORY VALE';
 
@@ -99,13 +99,13 @@ assert.equal(
 );
 
 assert.deepEqual(
-  getRibbonDrop(100, 12),
-  { ribbon: 88, dropped: true },
-  'dropRibbon helper should subtract from ribbon when possible'
+  getRibbonDrop(100, ribbonLoss.wrongWord),
+  { ribbon: 94, dropped: true },
+  'dropRibbon helper should subtract the tuned wrong-word loss when possible'
 );
 
 assert.deepEqual(
-  getRibbonDrop(5, 12),
+  getRibbonDrop(5, ribbonLoss.wrongWord),
   { ribbon: 0, dropped: true },
   'dropRibbon helper should clamp ribbon at zero'
 );
@@ -157,7 +157,7 @@ assert.deepEqual(
     memoryState: 'forgotten',
     label: 'FORGOTTEN',
     journal: "Witness: FORGET blurs Eddie's fare, leaving only Mallory's door in his panic.",
-    message: 'Eddie Pike forgets the fare on the receipt, but the locked alley door still stains his sleeve.'
+    message: 'FORGET is accepted. Eddie loses the fare, but the locked alley door still stains his sleeve.'
   },
   'FORGET should edit an in-range witness into the forgotten state'
 );
@@ -169,7 +169,7 @@ assert.deepEqual(
     memoryState: 'forgotten',
     label: 'FORGOTTEN',
     journal: "Witness: FORGET blurs Eddie's fare, leaving only Mallory's door in his panic.",
-    message: 'Eddie Pike is already forgotten. The same word only deepens the bruise.'
+    message: 'FORGET is accepted, but Eddie is already forgotten. The same word only deepens the bruise.'
   },
   'repeating a witness command should not change state twice'
 );
@@ -187,9 +187,75 @@ assert.deepEqual(
     memoryState: 'cornered',
     label: 'CORNERED',
     journal: 'Witness: ACCUSE ties Eddie to Black Ribbon Press and gives up OPEN.',
-    message: 'Eddie Pike breaks. Black Ribbon Press paid him, and the door only listens to OPEN.'
+    message: 'ACCUSE is accepted. Eddie breaks: Black Ribbon Press paid him, and the door only listens to OPEN.'
   },
   'ACCUSE should connect Eddie to the door command and ending lead'
+);
+
+
+assert.deepEqual(
+  getGhostCommandResult('BURN', { ghostActive: true, doorOpen: true }),
+  {
+    kind: 'accepted',
+    command: 'BURN',
+    loss: 8,
+    pressure: 'enraged',
+    message: 'BURN is accepted. Mallory flares hot and recoils, but the heat makes her faster after you.',
+    journalFeedback: 'BURN hurts most, knocks the ghost back, then leaves her angry.'
+  },
+  'BURN should be an accepted high-cost enrage/recoil ghost command once the door is open'
+);
+
+assert.deepEqual(
+  getGhostCommandResult('BIND', { ghostActive: true, doorOpen: true }),
+  {
+    kind: 'accepted',
+    command: 'BIND',
+    loss: 4,
+    pressure: 'bound',
+    duration: 2600,
+    message: 'BIND is accepted. Black ribbon staples Mallory to the floor for a few breaths.',
+    journalFeedback: 'BIND costs less ribbon and pauses ghost pressure briefly.'
+  },
+  'BIND should be a moderate-cost command that pauses ghost pressure'
+);
+
+assert.deepEqual(
+  getGhostCommandResult('LIE', { ghostActive: true, doorOpen: true }),
+  {
+    kind: 'accepted',
+    command: 'LIE',
+    loss: 3,
+    pressure: 'lured',
+    duration: 3000,
+    message: 'LIE is accepted. A false obituary crosses the alley; Mallory chases the wrong ending.',
+    journalFeedback: 'LIE is cheap and redirects the ghost toward a decoy.'
+  },
+  'LIE should be the cheapest command and create lure behavior'
+);
+
+assert.equal(
+  getGhostCommandResult('BIND', { ghostActive: true, doorOpen: false }).kind,
+  'blocked',
+  'ghost commands should be case-gated until the alley door is open'
+);
+
+assert.equal(
+  getGhostCommandResult('BURN', { ghostActive: false, doorOpen: true }).kind,
+  'out-of-context',
+  'ghost commands should report out-of-context after Mallory is banished'
+);
+
+assert.deepEqual(
+  getProximityPressure(48, { active: true, angry: true, mutated: false, mutationLevel: 0 }),
+  { label: 'GRAVE-CLOSE', level: 'danger', drainRate: ribbonLoss.proximityAngry },
+  'close angry ghosts should expose readable danger pressure and tuned drain'
+);
+
+assert.deepEqual(
+  getProximityPressure(140, { active: true, angry: false, mutated: false, mutationLevel: 0 }),
+  { label: 'DISTANT', level: 'safe', drainRate: 0 },
+  'distant ghosts should not apply pressure drain'
 );
 
 assert.deepEqual(
