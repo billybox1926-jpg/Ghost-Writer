@@ -143,3 +143,7 @@ See `docs/architecture.md` for a code-oriented map of the current prototype runt
 ## Design target
 
 Ghost Writer should feel like Shadowgate and Deja Vu wandered into a haunted 16-bit noir arcade cabinet. The screen should invite investigation first, panic second, and dread always.
+
+## License
+
+Ghost Writer is released under the MIT License. See `LICENSE.md` for details.
