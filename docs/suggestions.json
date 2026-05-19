@@ -1,0 +1,56 @@
+{
+  "paperInkWoodInteractions": [
+    {
+      "id": "watermarked-ledger-slip",
+      "theme": "paper",
+      "seed": "A damp receipt reveals a second name when held near the lamp.",
+      "authoringNote": "Use as a clue-source variant, not as inventory crafting."
+    },
+    {
+      "id": "ink-bleed-accusation",
+      "theme": "ink",
+      "seed": "Typed ACCUSE near a stained confession page changes one journal line.",
+      "authoringNote": "Keep effects text-only and deterministic."
+    },
+    {
+      "id": "scarred-oak-threshold",
+      "theme": "wood",
+      "seed": "Doorframe scratches mirror syllable count of a suspected True Name.",
+      "authoringNote": "Treat as hint texture; do not auto-solve name input."
+    }
+  ],
+  "ghostEncounterSeeds": [
+    {
+      "id": "hallway-pressure-hum",
+      "trigger": "repeated-invalid-semantic-command",
+      "statusText": "The hum in the walls grows teeth.",
+      "intent": "Warn player that repeated misuse increases pressure."
+    },
+    {
+      "id": "typebar-chill-spike",
+      "trigger": "near-miss-true-name",
+      "statusText": "Frost climbs the typebars; the ghost noticed.",
+      "intent": "Signal near-correct naming without confirming the answer."
+    }
+  ],
+  "witnessCommandSeeds": [
+    {
+      "command": "CONFESS",
+      "preconditions": ["witness-in-range", "journal-has-contradiction-clue"],
+      "result": "Witness reveals one constrained follow-up hint.",
+      "authoringNote": "Keep compatible with current witness command grammar."
+    },
+    {
+      "command": "RETRACT",
+      "preconditions": ["witness-previously-accused"],
+      "result": "Witness trust partially recovers; pressure cost remains.",
+      "authoringNote": "Useful for reversible narrative beats without new systems."
+    }
+  ],
+  "noirCopyGuidelines": [
+    "Lead with actionable meaning before mood.",
+    "Prefer one vivid image per line.",
+    "Keep critical status text under roughly 90 characters.",
+    "Do not present speculative mechanics as already playable."
+  ]
+}
