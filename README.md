@@ -97,12 +97,23 @@ npm run smoke:browser
 ```text
 .
 ├── docs/
+│   ├── CONTRIBUTING.md
+│   ├── ISSUE_LABELS.md
+│   ├── MAINTAINER_WORKFLOW.md
+│   ├── README.md
+│   ├── TODO.md
+│   ├── architecture.md
 │   ├── design.md
-│   └── roadmap.md
+│   ├── guide.md
+│   ├── playtest-notes.md
+│   ├── roadmap.md
+│   ├── rule_authoring.md
+│   └── suggestions.json
 ├── scripts/
 │   ├── browser-smoke.mjs
 │   ├── dev-server.mjs
-│   └── smoke-test.mjs
+│   ├── smoke-test.mjs
+│   └── test.mjs
 ├── src/
 │   ├── audio-engine.js
 │   ├── case-flow.js
@@ -116,6 +127,10 @@ npm run smoke:browser
 ├── package.json
 └── README.md
 ```
+
+## Documentation map
+
+See `docs/README.md` for the purpose, audience, maintenance expectations, and source-of-truth status of each documentation file.
 
 ## Player and setup guide
 
