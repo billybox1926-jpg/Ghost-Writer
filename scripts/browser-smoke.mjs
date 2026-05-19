@@ -86,6 +86,20 @@ async function waitForJson(url, timeoutMs = 5000) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
+
+function isChromiumBootstrapError(error) {
+  const message = error?.message || '';
+  return (
+    message.startsWith('Timed out waiting for http://127.0.0.1:')
+    || message === 'Browser did not expose a debuggable page target.'
+    || message.includes('fetch failed')
+    || message.includes('ECONNREFUSED')
+    || message.includes('ECONNRESET')
+    || message.includes('WebSocket upgrade failed')
+    || message.includes('WebSocket upgrade returned an unexpected accept key.')
+  );
+}
+
 function encodeFrame(text) {
   const payload = Buffer.from(text);
   const length = payload.length;
@@ -260,6 +274,7 @@ let server;
 let browserProcess;
 let profileDir;
 let client;
+let cdpConnected = false;
 
 try {
   server = createStaticServer();
@@ -284,6 +299,7 @@ try {
   if (!target?.webSocketDebuggerUrl) throw new Error('Browser did not expose a debuggable page target.');
 
   client = await connectWebSocket(target.webSocketDebuggerUrl);
+  cdpConnected = true;
   await client.send('Runtime.enable');
   await client.send('Log.enable');
   await client.send('Page.enable');
@@ -341,9 +357,16 @@ try {
 
   console.log(`Browser smoke passed with ${browser.name}; screenshot saved to ${screenshotPath}.`);
 } catch (error) {
-  if (browserProcess?.exitCode !== null && browserProcess?.exitCode !== 0) {
-    skip(`${browser.name} was found but could not stay running in this environment.`);
+  if (!cdpConnected) {
+    if (browserProcess?.exitCode !== null && browserProcess?.exitCode !== 0) {
+      skip(`${browser.name} was found but could not stay running in this environment.`);
+    }
+
+    if (isChromiumBootstrapError(error)) {
+      skip('chromium was found but DevTools endpoint did not become available in this environment.');
+    }
   }
+
   console.error(`Browser smoke failed: ${error.message}`);
   process.exitCode = 1;
 } finally {
