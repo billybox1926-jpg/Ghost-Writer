@@ -16,7 +16,7 @@ Ghost Writer is a lightweight retro adventure prototype built with plain HTML, C
 
 You are the ghost of a murdered 1940s journalist. Your soul is trapped inside a haunted typewriter carried by a hardboiled detective. You investigate paper, ink, wood, witnesses, and ghosts by typing the right words at the right moment.
 
-Combat is semantic. Words like `BURN`, `BIND`, and `LIE` affect ghosts differently, while a correct True Name can end an encounter outright.
+Semantic combat is the core hook: words like `BURN`, `BIND`, and `LIE` affect ghosts differently, while a correct True Name can end an encounter outright.
 
 ## Current prototype
 
@@ -29,7 +29,7 @@ It includes:
 - witness memory commands
 - current-run journal entries
 - ribbon health and ghost pressure
-- semantic command words
+- Semantic command words
 - True Name banishment
 - misspelled-name ghost mutation behavior
 - generated Web Audio feedback
