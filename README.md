@@ -111,6 +111,10 @@ npm run smoke:browser
 └── README.md
 ```
 
+## Internal architecture map
+
+See `docs/architecture.md` for a code-oriented map of the current prototype runtime, modules, and boundaries.
+
 ## Design target
 
 Ghost Writer should feel like Shadowgate and Deja Vu wandered into a haunted 16-bit noir arcade cabinet. The screen should invite investigation first, panic second, and dread always.
