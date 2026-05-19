@@ -169,6 +169,8 @@ Current docs include:
 - `47502f6` — add README license note.
 - `58bb1d6` — streamline public README.
 - `8b66eb2` — align docs index with project map.
+- `1c09429` — make TODO project map robust.
+- `7e0e2ce` — restore the `Semantic` README smoke marker.
 
 ## Latest validation history
 
@@ -207,6 +209,7 @@ The following docs/metadata-only commits landed after the latest local validatio
 - Public README streamlining.
 - Docs index alignment.
 - TODO/project-map strengthening.
+- README smoke-marker restoration after `npm run smoke` reported `Missing expected snippet in README.md: Semantic`.
 
 Run the verification set again after pulling latest `main`.
 
