@@ -9,5 +9,5 @@
     "smoke:browser": "node scripts/browser-smoke.mjs",
     "test": "node scripts/test.mjs"
   },
-  "license": "UNLICENSED"
+  "license": "MIT"
 }
