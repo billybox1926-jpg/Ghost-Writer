@@ -1,35 +1,38 @@
 # Ghost Writer Roadmap
 
-## Phase 1: Playable spine
+This roadmap summarizes current direction for the prototype.
 
-- Type words into a live typewriter interface.
-- Add ribbon health and wrong-letter punishment.
-- Add a simple clue that reveals a True Name.
-- Let one ghost be banished through correct deduction.
+> **Source of truth:** The GitHub issue tracker is the authoritative list for active and scheduled work. This file is a planning snapshot and should stay aligned with open issues.
 
-## Phase 2: Investigation depth
+## Current completed foundation
 
-- Add an inspect action for paper, ink, and wood objects.
-- Create a clue journal that tracks discovered words and names.
-- Add witnesses with memories that can be edited by typed commands. _(Prototype: Eddie Pike now responds to FORGET, REMEMBER, and ACCUSE.)_
-- Make command outcomes depend on context.
+- Core no-dependency browser prototype built with plain HTML, CSS, and Canvas JavaScript.
+- First playable investigation slice for **Mallory Vale** with typing-led clue gathering and confrontation flow.
+- Onboarding guidance and supporting docs established for contributors and maintainers.
+- Audio feedback systems are implemented for interactions and encounter feel.
+- Optional browser smoke coverage exists and is designed to be skip-safe in constrained environments.
 
-## Phase 3: Encounter design
+## Current active priorities
 
-- Add multiple ghost archetypes with different semantic weaknesses.
-- Add mutation states for misspelled True Names.
-- Add pressure timers without turning every encounter into a typing test.
-- Add Hardboiled Mode scoring.
+- **#33** — Run and document true human/browser playtesting (tracked separately from automated smoke checks).
+- **Docs completion batch** — finish and keep aligned:
+  - **#36** `docs/guide.md`
+  - **#37** architecture/design follow-up docs
+  - **#38** roadmap and lightweight maintenance docs
+  - **#39** additional docs consistency work
+  - **#41** CI/docs workflow alignment where relevant
+- **#28** — expand paper/ink/wood puzzle interactions.
+- **#27** — implement the second ghost encounter.
+- **#29** — build the second playable investigation scene.
 
-## Phase 4: Presentation
+## Near-term planned work
 
-- Replace placeholder shapes with 16-bit noir sprites.
-- Add typewriter key sounds, ribbon fray sounds, and ghost stingers.
-- Add rain, scanline, and amber monitor effects.
-- Add spirit-travel transitions inspired by Mode 7.
+- Integrate the second investigation scene with puzzle interaction depth and a new ghost confrontation path.
+- Refine clue readability, pacing, and feedback from upcoming human playtests.
+- Keep documentation, smoke checks, and contributor guidance synchronized with shipped prototype behavior.
 
-## Phase 5: Content slice
+## Later / future ideas
 
-- Build a complete first case: the newsroom murder.
-- Include one locked door puzzle, one witness memory puzzle, one ghost combat scene, and one True Name deduction.
-- End with a new lead that points to the wider conspiracy.
+- Broader case progression beyond the current slice, including additional witnesses and semantic puzzle variations.
+- Expanded encounter archetypes, richer audiovisual polish, and optional challenge tuning modes.
+- Longer-form narrative continuity that links multiple investigations without sacrificing quick browser playability.
