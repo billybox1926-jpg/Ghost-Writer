@@ -111,6 +111,10 @@ npm run smoke:browser
 └── README.md
 ```
 
+## Player and setup guide
+
+See `docs/guide.md` for a player-facing setup, controls, and Mallory Vale walkthrough.
+
 ## Internal architecture map
 
 See `docs/architecture.md` for a code-oriented map of the current prototype runtime, modules, and boundaries.
