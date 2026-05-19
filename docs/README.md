@@ -8,7 +8,7 @@ The issue tracker remains the source of truth for active work. Docs should descr
 
 - New player or playtester? Start with `guide.md`.
 - Contributor changing code or docs? Start with `CONTRIBUTING.md`, then check `architecture.md` if runtime behavior is involved.
-- Maintainer reviewing issues or PRs? Start with `MAINTAINER_WORKFLOW.md` and `ISSUE_LABELS.md`.
+- Maintainer reviewing issues, PRs, or repo process? Start with `MAINTAINER_WORKFLOW.md`, `ISSUE_LABELS.md`, and `TODO.md`.
 - Designer proposing future systems or cases? Use `design.md`, `rule_authoring.md`, `suggestions.json`, and `roadmap.md` according to the scopes below.
 - Recording human test results? Use `playtest-notes.md`.
 
@@ -100,17 +100,17 @@ Authority: supporting planning snapshot; GitHub issues are authoritative for act
 
 ### `TODO.md`
 
-Audience: maintainers doing lightweight recurring repository upkeep.
+Audience: maintainers and returning contributors who need a fast orientation snapshot.
 
-Purpose: keep small maintenance reminders visible without creating a second issue tracker.
+Purpose: record a compact project map: current status, completed issue/PR references, latest validation notes, release gate, active direction, and repo hygiene reminders.
 
-Belongs here: recurring hygiene reminders, verification reminders, and short-lived maintenance notes that do not deserve their own issue yet.
+Belongs here: high-level project state, references to completed work, validation/boot notes, release-candidate reminders, and quick links to current active direction.
 
-Does not belong here: feature backlog, bug reports, accepted roadmap items, or anything that needs discussion/ownership.
+Does not belong here: detailed implementation specs, full issue discussions, long design proposals, bug reports that need ownership, or anything that should be tracked as a GitHub issue.
 
-Update when: recurring maintenance expectations change or a reminder becomes obsolete, promoted to an issue, or completed permanently.
+Update when: a major work batch lands, release gate status changes, validation results are updated, or the active direction changes.
 
-Authority: supporting checklist only; issues remain authoritative for tracked work.
+Authority: supporting maintainer map only; GitHub issues remain authoritative for active work.
 
 ### `design.md`
 
