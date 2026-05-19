@@ -1,5 +1,11 @@
 # Ghost Writer
 
+[![CI](https://github.com/billybox1926-jpg/Ghost-Writer/actions/workflows/ci.yml/badge.svg)](https://github.com/billybox1926-jpg/Ghost-Writer/actions/workflows/ci.yml)
+![No framework](https://img.shields.io/badge/framework-none-2f2f46)
+![Canvas](https://img.shields.io/badge/rendering-HTML5%20Canvas-5b2f46)
+![Dependencies](https://img.shields.io/badge/runtime%20dependencies-none-2f4636)
+![Status](https://img.shields.io/badge/status-prototype-704214)
+
 A horror-tinged retro adventure prototype about a deceased journalist haunting a typewriter, using words as weapons to uncover their own murder.
 
 The goal is to keep the project light enough to run anywhere: no build step, no framework, no external assets, and no dependencies. Open `index.html` directly, or run the tiny local server included in `scripts/`.
