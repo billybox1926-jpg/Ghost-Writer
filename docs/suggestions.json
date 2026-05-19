@@ -3,20 +3,52 @@
     {
       "id": "watermarked-ledger-slip",
       "theme": "paper",
-      "seed": "A damp receipt reveals a second name when held near the lamp.",
-      "authoringNote": "Use as a clue-source variant, not as inventory crafting."
+      "locationSeed": "Mallory Vale case desk or Black Ribbon Press intake counter",
+      "typedWord": "REVEAL",
+      "preconditions": ["player-near-paper-clue", "clue-not-yet-revealed"],
+      "result": "A damp receipt or ledger slip exposes a watermark naming a second signer.",
+      "statusText": "The paper drinks the word. A watermark lifts from the fibers.",
+      "authoringNote": "Use as a deterministic clue reveal, not as inventory crafting."
     },
     {
       "id": "ink-bleed-accusation",
       "theme": "ink",
-      "seed": "Typed ACCUSE near a stained confession page changes one journal line.",
-      "authoringNote": "Keep effects text-only and deterministic."
+      "locationSeed": "stained confession page near Eddie Pike or a later witness desk",
+      "typedWord": "ACCUSE",
+      "preconditions": ["player-near-ink-stain", "journal-has-witness-clue"],
+      "result": "A dried ink blot crawls into a legible contradiction and adds one journal hint.",
+      "statusText": "The ink remembers the lie before the witness does.",
+      "authoringNote": "Keep the effect text-only and deterministic; do not change witness state unless explicitly scoped."
     },
     {
       "id": "scarred-oak-threshold",
       "theme": "wood",
-      "seed": "Doorframe scratches mirror syllable count of a suspected True Name.",
-      "authoringNote": "Treat as hint texture; do not auto-solve name input."
+      "locationSeed": "locked alley doorframe or Black Ribbon Press office threshold",
+      "typedWord": "SPLIT",
+      "preconditions": ["player-near-wood-threshold", "threshold-has-hidden-mark"],
+      "result": "A hairline crack opens in the wood and exposes tally marks matching a True Name clue pattern.",
+      "statusText": "The old wood parts just enough to show what it swallowed.",
+      "authoringNote": "Reveal clue structure only; do not auto-solve name input or bypass the door gate."
+    },
+    {
+      "id": "false-lead-carbon-copy",
+      "theme": "paper",
+      "locationSeed": "Black Ribbon Press carbon-copy tray",
+      "typedWord": "ERASE",
+      "preconditions": ["player-near-carbon-copy", "false-lead-visible"],
+      "result": "A false lead fades, leaving the original pressure mark from the real typed name.",
+      "statusText": "The carbon copy loses its lie. The pressure mark remains.",
+      "authoringNote": "Use to prune confusion after the player has enough evidence; avoid making it required before the player understands the clue."
+    },
+    {
+      "id": "ink-stamp-black-ribbon",
+      "theme": "ink",
+      "locationSeed": "Black Ribbon Press shipping desk",
+      "typedWord": "STAMP",
+      "preconditions": ["player-near-press-stamp", "blank-form-inspected"],
+      "result": "A blank form receives a Black Ribbon Press mark that points toward the next scene or witness.",
+      "statusText": "The stamp drops like a judge's gavel. Black Ribbon Press answers in ink.",
+      "authoringNote": "Good bridge interaction for scene-to-scene progression without introducing inventory."
     }
   ],
   "ghostEncounterSeeds": [
