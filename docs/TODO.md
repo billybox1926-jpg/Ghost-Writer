@@ -1,6 +1,6 @@
 # Ghost Writer TODO and Project Map
 
-_Last updated: 2026-05-19_
+_Last updated: 2026-05-20_
 
 This file is the maintainer project map for Ghost Writer. It records the current public prototype state, completed work, important references, validation history, release gates, and next development direction.
 
@@ -102,14 +102,14 @@ Preserve these rules unless an input-redesign issue explicitly says otherwise:
 - Audio uses the on-screen Audio button.
 - No letter-key shortcuts should interfere with typing.
 
-### Verification and CI
+### Verification
 
 - `npm run smoke` exists for fast repository checks.
 - `npm test` exists for pure helper logic.
 - `npm run smoke:browser` exists for optional browser verification.
 - Browser smoke skips cleanly when no supported browser is available.
 - Browser smoke also skips cleanly when Chromium DevTools bootstrap fails before connection.
-- GitHub Actions CI runs smoke, tests, whitespace, syntax checks, and optional browser smoke.
+- No GitHub Actions workflow is currently active; verification is local/manual unless a future scoped issue reintroduces automation.
 
 ### Documentation
 
@@ -137,18 +137,17 @@ Current docs include:
 - #37 — contributor, maintainer, and label workflow docs.
 - #38 — roadmap and maintenance docs.
 - #39 — rule-authoring and structured suggestion docs.
-- #41 — lightweight CI workflow.
+- #41 — lightweight CI workflow, later removed when Actions were no longer part of the current public-prototype path.
 - #45 — browser-smoke bootstrap skip behavior.
 - #49 — docs index and per-file scope map.
 - #50 — expanded design guide.
-- #51 — refreshed roadmap after docs/CI cleanup.
-- #28 — typed paper/ink/wood material-interaction seeds.
+- #51 — refreshed roadmap after docs/verification cleanup.
 
 ### Merged PRs / completed Codex tasks
 
 - #40 — architecture map.
 - #42 — player/setup guide.
-- #43 — CI workflow.
+- #43 — CI workflow, later removed from the active repo configuration.
 - #44 — initial roadmap and TODO.
 - #46 — browser-smoke skip hardening.
 - #47 — contributor and maintainer workflow docs.
@@ -171,6 +170,9 @@ Current docs include:
 - `8b66eb2` — align docs index with project map.
 - `1c09429` — make TODO project map robust.
 - `7e0e2ce` — restore the `Semantic` README smoke marker.
+- `1685bfb` — remove the CI badge from the README.
+- `914ae0c` — remove the GitHub Actions workflow file.
+- `fb1dbaa` — align the roadmap after workflow removal.
 
 ## Latest validation history
 
@@ -200,7 +202,7 @@ Observed results:
 - `npm run smoke:browser` skipped cleanly because Codespaces had no supported browser.
 - `npm run dev` booted successfully with `Ghost Writer dev server: http://localhost:8000`.
 
-### After the public-doc/license cleanup
+### After the public-doc/license/workflow cleanup
 
 The following docs/metadata-only commits landed after the latest local validation:
 
@@ -210,8 +212,11 @@ The following docs/metadata-only commits landed after the latest local validatio
 - Docs index alignment.
 - TODO/project-map strengthening.
 - README smoke-marker restoration after `npm run smoke` reported `Missing expected snippet in README.md: Semantic`.
+- CI badge removal from the README.
+- GitHub Actions workflow removal.
+- Roadmap alignment after workflow removal.
 
-Run the verification set again after pulling latest `main`.
+Run the verification set locally after pulling latest `main`.
 
 ## Verification checklist
 
@@ -283,6 +288,17 @@ Open follow-up issues for confirmed bugs or major UX problems.
 ### #33 — Human/browser playtest
 
 Release-critical. This proves the current slice works for a real player in a browser.
+
+### #28 — Paper, ink, and wood puzzle interactions
+
+Next puzzle-system proof. It should turn typed material interactions into small playable or implementation-ready beats outside combat and witness memory.
+
+Recommended constraints:
+
+- use paper, ink, and wood as typed-word surfaces
+- keep interactions deterministic and readable
+- avoid inventory, crafting, or framework creep
+- preserve the Mallory Vale route
 
 ### #27 — Second ghost encounter
 
