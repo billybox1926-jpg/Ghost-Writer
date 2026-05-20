@@ -7,8 +7,6 @@
 
 A horror-noir browser game prototype where a murdered journalist haunts a typewriter and fights ghosts with words.
 
-Play the current public build: https://billybox1926-jpg.github.io/Ghost-Writer/
-
 ## What it is
 
 Ghost Writer is a lightweight retro adventure prototype built with plain HTML, CSS, JavaScript, and the Canvas API. There is no framework, no build step, no external asset pipeline, and no runtime dependency stack.
