@@ -1,6 +1,5 @@
 # Ghost Writer
 
-[![CI](https://github.com/billybox1926-jpg/Ghost-Writer/actions/workflows/ci.yml/badge.svg)](https://github.com/billybox1926-jpg/Ghost-Writer/actions/workflows/ci.yml)
 ![No framework](https://img.shields.io/badge/framework-none-2f2f46)
 ![Canvas](https://img.shields.io/badge/rendering-HTML5%20Canvas-5b2f46)
 ![Dependencies](https://img.shields.io/badge/runtime%20dependencies-none-2f4636)
