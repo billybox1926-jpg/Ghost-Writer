@@ -11,7 +11,7 @@ This roadmap summarizes the current direction for the prototype.
 - Generated Web Audio feedback for typing, command outcomes, ribbon damage, pressure, door opening, and Mallory banishment.
 - Current-run journal and accessibility/status text support for key clue and state changes.
 - Optional browser smoke coverage that skips cleanly when no supported browser is available.
-- Lightweight CI workflow for smoke, test, whitespace, syntax, and optional browser-smoke checks.
+- Lightweight local verification commands for smoke, test, whitespace, syntax, and optional browser-smoke checks.
 - Player/setup, architecture, contributor, maintainer, label, roadmap, TODO, rule-authoring, structured-suggestion, docs-index, and design-guide documentation established and aligned with the current prototype.
 
 ## Current active priorities
@@ -26,7 +26,7 @@ This roadmap summarizes the current direction for the prototype.
 - Use human playtest findings to refine onboarding, clue readability, feedback timing, accessibility text, and browser feel.
 - Design paper/ink/wood interactions as small, deterministic typed-word puzzle beats rather than inventory or crafting systems.
 - Develop the second ghost and second scene incrementally so the Mallory Vale flow remains stable while the larger structure grows.
-- Keep documentation, smoke checks, and contributor guidance synchronized with shipped behavior as the prototype expands.
+- Keep documentation, local smoke checks, and contributor guidance synchronized with shipped behavior as the prototype expands.
 
 ## Later / future ideas
 
