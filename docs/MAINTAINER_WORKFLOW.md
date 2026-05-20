@@ -35,7 +35,7 @@ For every PR, confirm:
 
 ## Protected behavior for non-gameplay issues
 
-For docs, CI, maintenance, and similar issues, reviewers should reject or request changes if PRs unintentionally alter:
+For docs, verification, maintenance, and similar issues, reviewers should reject or request changes if PRs unintentionally alter:
 
 - Input model behavior.
 - The current Mallory Vale narrative/progression flow.
