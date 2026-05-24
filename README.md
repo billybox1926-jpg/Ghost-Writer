@@ -85,6 +85,10 @@ The optional browser smoke check is environment-dependent and skips cleanly when
 npm run smoke:browser
 ```
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+
 ## Documentation
 
 - Player/setup guide: `docs/guide.md`
