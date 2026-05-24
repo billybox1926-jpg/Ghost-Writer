@@ -6,8 +6,27 @@ import { extname, join, normalize } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { Socket } from 'node:net';
 
-const knownBrowsers = ['chromium', 'chromium-browser', 'google-chrome', 'firefox'];
-const chromeBrowsers = new Set(['chromium', 'chromium-browser', 'google-chrome']);
+const knownBrowsers = [
+  'chromium',
+  'chromium-browser',
+  'google-chrome',
+  'msedge',
+  '/c/Program Files/Microsoft/Edge/Application/msedge.exe',
+  '/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'firefox'
+];
+const chromeBrowsers = new Set([
+  'chromium',
+  'chromium-browser',
+  'google-chrome',
+  'msedge',
+  '/c/Program Files/Microsoft/Edge/Application/msedge.exe',
+  '/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+]);
 const root = process.cwd();
 const screenshotPath = join(root, 'artifacts', 'browser-smoke.png');
 
@@ -19,7 +38,9 @@ const types = new Map([
 ]);
 
 function findExecutable(name) {
-  const result = spawnSync('sh', ['-c', `command -v ${name}`], { encoding: 'utf8' });
+  if (name.startsWith('/c/')) return '';
+  if (existsSync(name)) return name;
+  const result = spawnSync('sh', ['-c', `command -v "${name.replaceAll('"', '\\"')}"`], { encoding: 'utf8' });
   return result.status === 0 ? result.stdout.trim() : '';
 }
 
@@ -250,10 +271,12 @@ function connectWebSocket(webSocketUrl) {
 }
 
 function getRuntimeProblems(client) {
-  return client.events.filter(({ method, params }) => (
-    method === 'Runtime.exceptionThrown'
-    || (method === 'Log.entryAdded' && ['error', 'warning'].includes(params?.entry?.level))
-  ));
+  return client.events.filter(({ method, params }) => {
+    if (method === 'Runtime.exceptionThrown') return true;
+    if (method !== 'Log.entryAdded' || !['error', 'warning'].includes(params?.entry?.level)) return false;
+    if (params?.entry?.url?.endsWith('/favicon.ico')) return false;
+    return true;
+  });
 }
 
 async function evaluate(client, expression) {
@@ -372,6 +395,7 @@ try {
 } finally {
   client?.close();
   browserProcess?.kill();
+  if (browserProcess) await new Promise((resolve) => browserProcess.once('exit', resolve));
   if (server) await new Promise((resolve) => server.close(resolve));
-  if (profileDir) rmSync(profileDir, { recursive: true, force: true });
+  if (profileDir) rmSync(profileDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
 }

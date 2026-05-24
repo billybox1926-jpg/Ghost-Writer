@@ -970,10 +970,10 @@ function drawHud() {
   drawPixelText(`Witness: ${state.witness.memoryLabel}`, 520, 52, 20, state.witness.edited ? '#f2b35f' : '#d7c7a1');
   drawPixelText(`Typed: ${state.typed || '_'}`, 36, 88, 22, '#8cffc1');
   drawPixelText(state.message, 36, 120, 18, '#d7c7a1');
-  drawPixelText(getFirstCaseObjective(state.casePhase), 36, 146, 15, '#8cffc1');
+  drawPixelText(getCaseObjective(state.currentCaseId, state.casePhase), 36, 146, 15, '#8cffc1');
   drawPixelText(`F2 Hardboiled: ${state.hardboiled ? 'ON' : 'OFF'}`, 720, 146, 15, '#d7c7a1');
 
-  const discoveredClues = getDiscoveredClues(journalItems, state.discoveredClueIds);
+  const discoveredClues = getDiscoveredClues([...CASE_DATA[state.currentCaseId].inspectables, ...CASE_DATA[state.currentCaseId].caseJournalEntries], state.discoveredClueIds);
   drawPixelText('Journal:', 36, 172, 16, '#f2b35f');
   if (!discoveredClues.length) {
     drawPixelText('No clues copied yet', 112, 172, 16, '#d7c7a1');
@@ -989,7 +989,7 @@ function drawHud() {
 function updateStatusPanel() {
   if (!statusPanel) return;
 
-  const discoveredClues = getDiscoveredClues(journalItems, state.discoveredClueIds);
+  const discoveredClues = getDiscoveredClues([...CASE_DATA[state.currentCaseId].inspectables, ...CASE_DATA[state.currentCaseId].caseJournalEntries], state.discoveredClueIds);
   const journalSummary = discoveredClues.length
     ? discoveredClues.slice(-3).map((clue) => clue.journal).join(' ')
     : 'No clues copied yet.';
@@ -1000,7 +1000,7 @@ function updateStatusPanel() {
     `Hardboiled Mode ${state.hardboiled ? 'on' : 'off'}.`,
     `Ghost pressure ${getProximityPressure(distance(state.player, state.ghost), state.ghost).label}.`,
     `Witness ${state.witness.memoryLabel}.`,
-    getFirstCaseObjective(state.casePhase),
+    getCaseObjective(state.currentCaseId, state.casePhase),
     typedSummary,
     state.message,
     journalSummary
