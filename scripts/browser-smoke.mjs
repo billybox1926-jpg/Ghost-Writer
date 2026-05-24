@@ -394,8 +394,22 @@ try {
   process.exitCode = 1;
 } finally {
   client?.close();
-  browserProcess?.kill();
-  if (browserProcess) await new Promise((resolve) => browserProcess.once('exit', resolve));
+  if (browserProcess && browserProcess.exitCode === null && !browserProcess.killed) {
+    browserProcess.kill();
+    await new Promise((resolve) => {
+      const timeout = setTimeout(resolve, 1000);
+      browserProcess.once('exit', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
+    });
+  }
   if (server) await new Promise((resolve) => server.close(resolve));
-  if (profileDir) rmSync(profileDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
+  if (profileDir) {
+    try {
+      rmSync(profileDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    } catch (error) {
+      console.warn(`Browser smoke cleanup warning: ${error.message}`);
+    }
+  }
 }
