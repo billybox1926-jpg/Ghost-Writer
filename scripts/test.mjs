@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { getFirstCaseObjective, getFirstCasePhase, firstCasePhases } from '../src/case-flow.js';
+import { getCaseObjective, getCasePhase, CASE_PHASES, CASE_REGISTRY } from '../src/case-flow.js';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isCommandEntryKeyEvent, isEmptyLineShortcutEligible, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
@@ -257,8 +257,8 @@ assert.deepEqual(
     kind: 'changed',
     memoryState: 'forgotten',
     label: 'FORGOTTEN',
-    journal: "Witness: FORGET blurs Eddie's fare, leaving only Mallory's door in his panic.",
-    message: 'FORGET is accepted. Eddie loses the fare, but the locked alley door still stains his sleeve.'
+    journal: "Witness: FORGET blurs the current lead.",
+    message: 'FORGET is accepted. The witness loses the lead, but the darkness still remains.'
   },
   'FORGET should edit an in-range witness into the forgotten state'
 );
@@ -269,7 +269,7 @@ assert.deepEqual(
     kind: 'unchanged',
     memoryState: 'forgotten',
     label: 'FORGOTTEN',
-    journal: "Witness: FORGET blurs Eddie's fare, leaving only Mallory's door in his panic.",
+    journal: 'Witness: FORGET blurs the current lead.',
     message: 'FORGET is accepted, but Eddie is already forgotten. The same word only deepens the bruise.'
   },
   'repeating a witness command should not change state twice'
@@ -287,8 +287,8 @@ assert.deepEqual(
     kind: 'changed',
     memoryState: 'cornered',
     label: 'CORNERED',
-    journal: 'Witness: ACCUSE ties Eddie to Black Ribbon Press and gives up OPEN.',
-    message: 'ACCUSE is accepted. Eddie breaks: Black Ribbon Press paid him, and the door only listens to OPEN.'
+    journal: 'Witness: ACCUSE ties the witness to the conspiracy.',
+    message: 'ACCUSE is accepted. The witness breaks and gives up the secret word.'
   },
   'ACCUSE should connect Eddie to the door command and ending lead'
 );
@@ -301,8 +301,8 @@ assert.deepEqual(
     command: 'BURN',
     loss: 8,
     pressure: 'enraged',
-    message: 'BURN is accepted. Mallory flares hot and recoils, but the heat makes her faster after you.',
-    journalFeedback: 'BURN hurts most, knocks the ghost back, then leaves her angry.'
+    message: 'BURN is accepted. The ghost flares hot and recoils, but the heat makes it faster after you.',
+    journalFeedback: 'BURN hurts most, knocks the ghost back, then leaves it angry.'
   },
   'BURN should be an accepted high-cost enrage/recoil ghost command once the door is open'
 );
@@ -315,7 +315,7 @@ assert.deepEqual(
     loss: 4,
     pressure: 'bound',
     duration: 2600,
-    message: 'BIND is accepted. Black ribbon staples Mallory to the floor for a few breaths.',
+    message: 'BIND is accepted. Black ribbon staples the ghost to the floor for a few breaths.',
     journalFeedback: 'BIND costs less ribbon and pauses ghost pressure briefly.'
   },
   'BIND should be a moderate-cost command that pauses ghost pressure'
@@ -329,7 +329,7 @@ assert.deepEqual(
     loss: 3,
     pressure: 'lured',
     duration: 3000,
-    message: 'LIE is accepted. A false obituary crosses the alley; Mallory chases the wrong ending.',
+    message: 'LIE is accepted. A false lead crosses the room; the ghost chases the wrong ending.',
     journalFeedback: 'LIE is cheap and redirects the ghost toward a decoy.'
   },
   'LIE should be the cheapest command and create lure behavior'
@@ -344,7 +344,7 @@ assert.equal(
 assert.equal(
   getGhostCommandResult('BURN', { ghostActive: false, doorOpen: true }).kind,
   'out-of-context',
-  'ghost commands should report out-of-context after Mallory is banished'
+  'ghost commands should report out-of-context after the ghost is banished'
 );
 
 assert.deepEqual(
@@ -367,37 +367,37 @@ assert.deepEqual(
 
 
 assert.equal(
-  getFirstCasePhase({ discoveredClueIds: [], witnessMemoryState: 'guarded', doorOpen: false, ghostActive: true }),
-  firstCasePhases.BEGINNING,
+  getCasePhase.bind(null, 'mallory-vale')({ discoveredClueIds: [], witnessMemoryState: 'guarded', doorOpen: false, ghostActive: true }),
+  CASE_PHASES.BEGINNING,
   'first case should start in the beginning phase before clues turn the investigation'
 );
 
 assert.equal(
-  getFirstCasePhase({ discoveredClueIds: ['receipt'], witnessMemoryState: 'guarded', doorOpen: false, ghostActive: true }),
-  firstCasePhases.INVESTIGATION,
+  getCasePhase.bind(null, 'mallory-vale')({ discoveredClueIds: ['receipt'], witnessMemoryState: 'guarded', doorOpen: false, ghostActive: true }),
+  CASE_PHASES.INVESTIGATION,
   'finding the receipt should move the first case into its investigation turn'
 );
 
 assert.equal(
-  getFirstCasePhase({ discoveredClueIds: ['receipt', 'witness'], witnessMemoryState: 'cornered', doorOpen: false, ghostActive: true }),
-  firstCasePhases.DOOR_READY,
+  getCasePhase.bind(null, 'mallory-vale')({ discoveredClueIds: ['receipt', 'witness'], witnessMemoryState: 'cornered', doorOpen: false, ghostActive: true }),
+  CASE_PHASES.READY,
   'cornering Eddie should point the first case objective to the door word before the door opens'
 );
 
 assert.equal(
-  getFirstCasePhase({ discoveredClueIds: ['receipt', 'witness'], witnessMemoryState: 'cornered', doorOpen: true, ghostActive: true }),
-  firstCasePhases.CONFRONTATION,
-  'opening the locked door should mark the Mallory Vale confrontation phase'
+  getCasePhase.bind(null, 'mallory-vale')({ discoveredClueIds: ['receipt', 'witness'], witnessMemoryState: 'cornered', doorOpen: true, ghostActive: true }),
+  CASE_PHASES.CONFRONTATION,
+  'opening the locked door should mark the the ghost Vale confrontation phase'
 );
 
 assert.equal(
-  getFirstCasePhase({ discoveredClueIds: ['ending-lead'], witnessMemoryState: 'cornered', doorOpen: true, ghostActive: false }),
-  firstCasePhases.ENDING_LEAD,
-  'banishing Mallory should advance to the ending lead'
+  getCasePhase.bind(null, 'mallory-vale')({ discoveredClueIds: ['ending-lead'], witnessMemoryState: 'cornered', doorOpen: true, ghostActive: false }),
+  CASE_PHASES.ENDING,
+  'banishing the ghost should advance to the ending lead'
 );
 
 assert.match(
-  getFirstCaseObjective(firstCasePhases.ENDING_LEAD),
+  getCaseObjective.bind(null, 'mallory-vale')(CASE_PHASES.ENDING),
   /Black Ribbon Press|printer/i,
   'ending lead objective should point to the next case hook'
 );
@@ -435,6 +435,58 @@ assert.deepEqual(
   getDiscoveredClues(inspectables, ['door', 'missing', 'receipt']).map((clue) => clue.id),
   ['door', 'receipt'],
   'journal helper should resolve discovered clue ids and ignore stale ids'
+);
+
+
+assert.deepEqual(
+  getGhostCommandResult('ERASE', { ghostActive: true, shieldActive: true }),
+  {
+    kind: 'accepted',
+    command: 'ERASE',
+    loss: 5,
+    pressure: 'weakened',
+    duration: 4000,
+    message: 'ERASE is accepted. The ink shield thins; the ghost becomes vulnerable to its True Name.',
+    journalFeedback: 'ERASE weakens the Ink Shadow, breaking its name-shield.'
+  },
+  'ERASE should be an accepted command that weakens the Ink Shadow'
+);
+
+assert.deepEqual(
+  getWitnessCommandResult('guarded', 'GOSSIP', true),
+  {
+    kind: 'changed',
+    memoryState: 'truthful',
+    label: 'GOSSIPING',
+    journal: "Witness: GOSSIP reveals Victor's secret ink and the ledger.",
+    message: 'GOSSIP is accepted. The apprentice whispers about Victor\'s secret ink and the hidden ledger.'
+  },
+  'GOSSIP should move the apprentice to the truthful state'
+);
+
+
+assert.equal(
+  getCasePhase('black-ribbon-press', { discoveredClueIds: [], ghostActive: true }),
+  CASE_PHASES.BEGINNING,
+  'black ribbon press should start in beginning phase'
+);
+
+assert.equal(
+  getCasePhase('black-ribbon-press', { discoveredClueIds: ['ledger'], ghostActive: true }),
+  CASE_PHASES.INVESTIGATION,
+  'finding the ledger should advance case 2 to investigation'
+);
+
+assert.equal(
+  getCasePhase('black-ribbon-press', { discoveredClueIds: ['ledger', 'ledger-revealed'], ghostActive: true }),
+  CASE_PHASES.READY,
+  'revealing the name should advance case 2 to ready (shield still up)'
+);
+
+assert.equal(
+  getCasePhase('black-ribbon-press', { discoveredClueIds: ['ledger', 'ledger-revealed', 'ledger-erased'], ghostActive: true }),
+  CASE_PHASES.CONFRONTATION,
+  'erasing the shield should advance case 2 to confrontation'
 );
 
 console.log('Semantic rules and clue journal tests passed. The True Name holds.');

@@ -1,36 +1,61 @@
-export const firstCasePhases = {
+export const CASE_PHASES = {
   BEGINNING: 'beginning',
   INVESTIGATION: 'investigation',
-  DOOR_READY: 'door-ready',
+  READY: 'ready',
   CONFRONTATION: 'confrontation',
-  ENDING_LEAD: 'ending-lead'
+  ENDING: 'ending'
 };
 
-const phaseObjectives = {
-  [firstCasePhases.BEGINNING]: 'First: empty-line Enter inspects clues. Read the receipt, then Eddie.',
-  [firstCasePhases.INVESTIGATION]: 'Next: stand by Eddie; type REMEMBER, Enter, then ACCUSE, Enter.',
-  [firstCasePhases.DOOR_READY]: 'Door word won: type OPEN, Enter. The locked room will answer.',
-  [firstCasePhases.CONFRONTATION]: 'Finish: type MALLORY VALE, Enter, once the door is open.',
-  [firstCasePhases.ENDING_LEAD]: 'Ending lead: follow the printer\'s mark beyond the open alley.'
+export const CASE_REGISTRY = {
+  'mallory-vale': {
+    title: 'The Mallory Vale Slice',
+    phases: CASE_PHASES,
+    objectives: {
+      [CASE_PHASES.BEGINNING]: 'First: empty-line Enter inspects clues. Read the receipt, then Eddie.',
+      [CASE_PHASES.INVESTIGATION]: 'Next: stand by Eddie; type REMEMBER, Enter, then ACCUSE, Enter.',
+      [CASE_PHASES.READY]: 'Door word won: type OPEN, Enter. The locked room will answer.',
+      [CASE_PHASES.CONFRONTATION]: 'Finish: type MALLORY VALE, Enter, once the door is open.',
+      [CASE_PHASES.ENDING]: 'Ending lead: follow the printer\'s mark beyond the open alley.'
+    },
+    getPhase: ({ discoveredClueIds = [], witnessMemoryState = 'guarded', doorOpen = false, ghostActive = true }) => {
+      if (!ghostActive) return CASE_PHASES.ENDING;
+      if (doorOpen) return CASE_PHASES.CONFRONTATION;
+      if (witnessMemoryState === 'cornered') return CASE_PHASES.READY;
+      const hasReceipt = discoveredClueIds.includes('receipt');
+      const hasWitnessTurn = witnessMemoryState !== 'guarded' || discoveredClueIds.includes('witness');
+      if (hasReceipt || hasWitnessTurn) return CASE_PHASES.INVESTIGATION;
+      return CASE_PHASES.BEGINNING;
+    }
+  },
+  'black-ribbon-press': {
+    title: 'Black Ribbon Press',
+    phases: CASE_PHASES,
+    objectives: {
+      [CASE_PHASES.BEGINNING]: 'Case 2: The air smells of ink. Inspect the stained ledger.',
+      [CASE_PHASES.INVESTIGATION]: 'Reveal the name: type REVEAL near the ledger, then talk to the Apprentice.',
+      [CASE_PHASES.READY]: 'Name found, shield remains: type ERASE near the ledger or ghost.',
+      [CASE_PHASES.CONFRONTATION]: 'Shield broken: banish the Ink Shadow with its True Name.',
+      [CASE_PHASES.ENDING]: 'The press falls silent. A new lead points to the harbor.'
+    },
+    getPhase: ({ discoveredClueIds = [], witnessMemoryState = 'guarded', doorOpen = false, ghostActive = true }) => {
+      if (!ghostActive) return CASE_PHASES.ENDING;
+      const revealed = discoveredClueIds.includes('ledger-revealed');
+      const erased = discoveredClueIds.includes('ledger-erased');
+      if (erased) return CASE_PHASES.CONFRONTATION;
+      if (revealed) return CASE_PHASES.READY;
+      if (discoveredClueIds.includes('ledger')) return CASE_PHASES.INVESTIGATION;
+      return CASE_PHASES.BEGINNING;
+    }
+  }
 };
 
-export function getFirstCasePhase({
-  discoveredClueIds = [],
-  witnessMemoryState = 'guarded',
-  doorOpen = false,
-  ghostActive = true
-} = {}) {
-  if (!ghostActive) return firstCasePhases.ENDING_LEAD;
-  if (doorOpen) return firstCasePhases.CONFRONTATION;
-  if (witnessMemoryState === 'cornered') return firstCasePhases.DOOR_READY;
-
-  const hasReceipt = discoveredClueIds.includes('receipt');
-  const hasWitnessTurn = witnessMemoryState !== 'guarded' || discoveredClueIds.includes('witness');
-
-  if (hasReceipt || hasWitnessTurn) return firstCasePhases.INVESTIGATION;
-  return firstCasePhases.BEGINNING;
+export function getCasePhase(caseId, state) {
+  const caseData = CASE_REGISTRY[caseId];
+  return caseData ? caseData.getPhase(state) : CASE_PHASES.BEGINNING;
 }
 
-export function getFirstCaseObjective(phase) {
-  return phaseObjectives[phase] ?? phaseObjectives[firstCasePhases.BEGINNING];
+export function getCaseObjective(caseId, phase) {
+  const caseData = CASE_REGISTRY[caseId];
+  if (!caseData) return '';
+  return caseData.objectives[phase] ?? caseData.objectives[CASE_PHASES.BEGINNING];
 }

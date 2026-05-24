@@ -19,26 +19,33 @@ export const ghostCommandRules = {
   BURN: {
     loss: 8,
     pressure: 'enraged',
-    message: 'BURN is accepted. Mallory flares hot and recoils, but the heat makes her faster after you.',
-    journalFeedback: 'BURN hurts most, knocks the ghost back, then leaves her angry.'
+    message: 'BURN is accepted. The ghost flares hot and recoils, but the heat makes it faster after you.',
+    journalFeedback: 'BURN hurts most, knocks the ghost back, then leaves it angry.'
   },
   BIND: {
     loss: 4,
     pressure: 'bound',
     duration: 2600,
-    message: 'BIND is accepted. Black ribbon staples Mallory to the floor for a few breaths.',
+    message: 'BIND is accepted. Black ribbon staples the ghost to the floor for a few breaths.',
     journalFeedback: 'BIND costs less ribbon and pauses ghost pressure briefly.'
   },
   LIE: {
     loss: 3,
     pressure: 'lured',
     duration: 3000,
-    message: 'LIE is accepted. A false obituary crosses the alley; Mallory chases the wrong ending.',
+    message: 'LIE is accepted. A false lead crosses the room; the ghost chases the wrong ending.',
     journalFeedback: 'LIE is cheap and redirects the ghost toward a decoy.'
+  },
+  ERASE: {
+    loss: 5,
+    pressure: 'weakened',
+    duration: 4000,
+    message: 'ERASE is accepted. The ink shield thins; the ghost becomes vulnerable to its True Name.',
+    journalFeedback: 'ERASE weakens the Ink Shadow, breaking its name-shield.'
   }
 };
 
-export function getGhostCommandResult(command, { ghostActive, doorOpen }) {
+export function getGhostCommandResult(command, { ghostActive, doorOpen, shieldActive }) {
   const normalizedCommand = normalizeName(command);
   const rule = ghostCommandRules[normalizedCommand];
 
@@ -48,16 +55,18 @@ export function getGhostCommandResult(command, { ghostActive, doorOpen }) {
     return {
       kind: 'out-of-context',
       command: normalizedCommand,
-      message: `${normalizedCommand} has nothing to bite. Mallory is already gone.`
+      message: `${normalizedCommand} has nothing to bite. The ghost is already gone.`
     };
   }
 
-  if (!doorOpen) {
+  const isBlocked = (shieldActive !== undefined) ? shieldActive : !doorOpen;
+
+  if (isBlocked && normalizedCommand !== 'ERASE') {
     return {
       kind: 'blocked',
       command: normalizedCommand,
       loss: ribbonLoss.gatedWord,
-      message: `${normalizedCommand} scratches at the sealed door. Open Mallory's room before fighting the ghost directly.`
+      message: `${normalizedCommand} scratches at the barrier. Break the ghost's shield or door before fighting directly.`
     };
   }
 
@@ -157,20 +166,26 @@ export const witnessCommandStates = {
   FORGET: {
     state: 'forgotten',
     label: 'FORGOTTEN',
-    message: 'FORGET is accepted. Eddie loses the fare, but the locked alley door still stains his sleeve.',
-    journal: "Witness: FORGET blurs Eddie's fare, leaving only Mallory's door in his panic."
+    message: 'FORGET is accepted. The witness loses the lead, but the darkness still remains.',
+    journal: "Witness: FORGET blurs the current lead."
   },
   REMEMBER: {
     state: 'truthful',
     label: 'REMEMBERED',
-    message: 'REMEMBER is accepted. Eddie sees Mallory Vale pressing the receipt into his palm at the locked alley door.',
-    journal: "Witness: REMEMBER pins Eddie's receipt to Mallory Vale and the locked alley door."
+    message: 'REMEMBER is accepted. The witness sees the True Name pressing into their palm.',
+    journal: "Witness: REMEMBER pins the receipt to the True Name."
   },
   ACCUSE: {
     state: 'cornered',
     label: 'CORNERED',
-    message: 'ACCUSE is accepted. Eddie breaks: Black Ribbon Press paid him, and the door only listens to OPEN.',
-    journal: 'Witness: ACCUSE ties Eddie to Black Ribbon Press and gives up OPEN.'
+    message: 'ACCUSE is accepted. The witness breaks and gives up the secret word.',
+    journal: 'Witness: ACCUSE ties the witness to the conspiracy.'
+  },
+  GOSSIP: {
+    state: 'truthful',
+    label: 'GOSSIPING',
+    message: 'GOSSIP is accepted. The apprentice whispers about Victor\'s secret ink and the hidden ledger.',
+    journal: "Witness: GOSSIP reveals Victor's secret ink and the ledger."
   }
 };
 

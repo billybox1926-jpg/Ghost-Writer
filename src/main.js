@@ -1,4 +1,4 @@
-import { firstCasePhases, getFirstCaseObjective, getFirstCasePhase } from './case-flow.js';
+import { CASE_PHASES, getCaseObjective, getCasePhase } from './case-flow.js';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from './screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isEmptyLineShortcutEligible, isModifiedShortcutEvent, isMovementCode, normalizeCommittedWord } from './input-rules.js';
@@ -22,6 +22,52 @@ const noirPalette = {
   wetBrick: '#21170f'
 };
 
+const CASE_DATA = {
+  'mallory-vale': {
+    inspectables: [
+      { id: 'receipt', title: 'Rain-blurred receipt', journal: 'Receipt: Eddie Pike paid for one midnight fare to Mallory Vale and the locked alley door.', message: "The receipt is Eddie Pike's fare slip. Ink blooms: Mallory Vale rode to the locked alley door.", x: 396, y: 332, range: 54, revealsTrueName: true },
+      { id: 'typewriter', title: 'Haunted typewriter', journal: 'Typewriter: the E key sticks, as if begging to examine the room.', message: 'The typewriter chatters: arrows move only on an empty line; letters and spaces become commands.', x: 146, y: 350, range: 62 },
+      { id: 'door', title: 'Locked alley door', journal: "Door: fresh scratches match Mallory's nails; the wood is waiting for OPEN.", message: 'The locked door will not open until Eddie is cornered. Inspect him, make him remember, then ACCUSE.', x: 858, y: 330, range: 64 },
+      { id: 'witness', title: 'Raincoat witness', journal: "Witness: Eddie Pike carried Mallory's receipt and flinches at FORGET, REMEMBER, and ACCUSE.", message: "Eddie Pike hides under his raincoat. Stand close; type REMEMBER, Enter, then ACCUSE when he cracks.", x: 562, y: 348, range: 68 }
+    ],
+    caseJournalEntries: [
+      { id: 'door-open', journal: "Door opened: Eddie's hidden word exposes the room where Mallory Vale died." },
+      { id: 'ending-lead', journal: "Lead: Mallory leaves a printer's devil mark from the Black Ribbon Press." }
+    ],
+    commands: {
+      OPEN: "The locked alley door remembers Eddie's fare slip and swings onto Mallory Vale's last room.",
+      FORGET: 'A witness loses a minute. The rain keeps the secret.'
+    },
+    trueName: 'MALLORY VALE',
+    initialPlayerPos: { x: 140, y: 340 },
+    ghostStart: { x: 690, y: 285 },
+    witnessStart: { x: 562, y: 348 },
+    witnessName: 'EDDIE PIKE'
+  },
+  'black-ribbon-press': {
+    inspectables: [
+      { id: 'ledger', title: 'Ink-stained ledger', journal: 'Ledger: Thick ink obscures the last name entry. Needs REVEAL.', message: 'A heavy ledger. Ink has been spilled intentionally over the names. Type REVEAL.', x: 420, y: 310, range: 58 },
+      { id: 'devil', title: "Printer's Devil mark", journal: "Mark: A small, horned silhouette etched into the wood.", message: "The mark of the Black Ribbon Press. It feels cold to the touch.", x: 120, y: 280, range: 50 },
+      { id: 'witness', title: 'Trembling apprentice', journal: 'Witness: The boy knows who Victor was. Type GOSSIP.', message: "The apprentice is shaking. Type GOSSIP to hear what he knows.", x: 700, y: 340, range: 65 }
+    ],
+    caseJournalEntries: [
+       { id: 'ledger-revealed', journal: 'Revealed: The name Victor Printer is hidden under the spill.' },
+       { id: 'ledger-erased', journal: 'Erased: The ink shield is gone. The ghost is vulnerable.' },
+       { id: 'harbor-lead', journal: 'Lead: The printer\'s mark points toward the harbor.' }
+    ],
+    commands: {
+      REVEAL: 'The ink thins. The name VICTOR PRINTER starts to bleed through.',
+      GOSSIP: 'The boy whispers: "Victor used a special ink to shield his spirit."',
+      ERASE: 'The spill on the ledger clears.'
+    },
+    trueName: 'VICTOR PRINTER',
+    initialPlayerPos: { x: 80, y: 340 },
+    ghostStart: { x: 850, y: 280 },
+    witnessStart: { x: 700, y: 340 },
+    witnessName: 'THE APPRENTICE'
+  }
+};
+
 const rainStreaks = Array.from({ length: 72 }, (_, index) => ({
   x: (index * 73) % 960,
   y: (index * 41) % 540,
@@ -42,97 +88,44 @@ const skylineBlocks = Array.from({ length: 10 }, (_, index) => ({
   }))
 }));
 
-const inspectables = [
-  {
-    id: 'receipt',
-    title: 'Rain-blurred receipt',
-    journal: 'Receipt: Eddie Pike paid for one midnight fare to Mallory Vale and the locked alley door.',
-    message: "The receipt is Eddie Pike's fare slip. Ink blooms: Mallory Vale rode to the locked alley door.",
-    x: 396,
-    y: 332,
-    range: 54,
-    revealsTrueName: true
-  },
-  {
-    id: 'typewriter',
-    title: 'Haunted typewriter',
-    journal: 'Typewriter: the E key sticks, as if begging to examine the room.',
-    message: 'The typewriter chatters: arrows move only on an empty line; letters and spaces become commands.',
-    x: 146,
-    y: 350,
-    range: 62
-  },
-  {
-    id: 'door',
-    title: 'Locked alley door',
-    journal: "Door: fresh scratches match Mallory's nails; the wood is waiting for OPEN.",
-    message: 'The locked door will not open until Eddie is cornered. Inspect him, make him remember, then ACCUSE.',
-    x: 858,
-    y: 330,
-    range: 64
-  },
-  {
-    id: 'witness',
-    title: 'Raincoat witness',
-    journal: "Witness: Eddie Pike carried Mallory's receipt and flinches at FORGET, REMEMBER, and ACCUSE.",
-    message: "Eddie Pike hides under his raincoat. Stand close; type REMEMBER, Enter, then ACCUSE when he cracks.",
-    x: 562,
-    y: 348,
-    range: 68
-  }
-];
-
-const caseJournalEntries = [
-  {
-    id: 'door-open',
-    journal: "Door opened: Eddie's hidden word exposes the room where Mallory Vale died."
-  },
-  {
-    id: 'ending-lead',
-    journal: "Lead: Mallory leaves a printer's devil mark from the Black Ribbon Press."
-  }
-];
-
-const journalItems = [...inspectables, ...caseJournalEntries];
-
-const commands = {
-  OPEN: "The locked alley door remembers Eddie's fare slip and swings onto Mallory Vale's last room.",
-  FORGET: 'A witness loses a minute. The rain keeps the secret.'
+const initialState = (caseId = 'mallory-vale') => {
+  const cd = CASE_DATA[caseId];
+  return {
+    currentCaseId: caseId,
+    player: { ...cd.initialPlayerPos, speed: 2.2 },
+    typed: '',
+    message: caseId === 'mallory-vale' ? 'Case one: arrows move on an empty line. Empty Enter inspects.' : 'Case two: The Black Ribbon Press. Find Victor Printer.',
+    ribbon: 100,
+    hardboiled: false,
+    clueFound: false,
+    discoveredClueIds: [],
+    doorOpen: false,
+    casePhase: CASE_PHASES.BEGINNING,
+    witness: {
+      x: cd.witnessStart.x,
+      y: cd.witnessStart.y,
+      name: cd.witnessName,
+      memoryState: 'guarded',
+      memoryLabel: 'GUARDED',
+      edited: false
+    },
+    ghost: {
+      x: cd.ghostStart.x,
+      y: cd.ghostStart.y,
+      name: cd.trueName,
+      active: true,
+      angry: false,
+      mutated: false,
+      mutationLevel: 0,
+      boundUntil: 0,
+      luredUntil: 0,
+      lure: { ...cd.ghostStart },
+      shielded: caseId === 'black-ribbon-press'
+    },
+    screenShake: createScreenShakeState(),
+    particles: []
+  };
 };
-
-const initialState = () => ({
-  player: { x: 140, y: 340, speed: 2.2 },
-  typed: '',
-  message: 'Case one: arrows move on an empty line. Empty Enter inspects; letters type commands.',
-  ribbon: 100,
-  hardboiled: false,
-  clueFound: false,
-  discoveredClueIds: [],
-  doorOpen: false,
-  casePhase: firstCasePhases.BEGINNING,
-  witness: {
-    x: 562,
-    y: 348,
-    name: 'EDDIE PIKE',
-    memoryState: 'guarded',
-    memoryLabel: 'GUARDED',
-    edited: false
-  },
-  ghost: {
-    x: 690,
-    y: 285,
-    name: 'MALLORY VALE',
-    active: true,
-    angry: false,
-    mutated: false,
-    mutationLevel: 0,
-    boundUntil: 0,
-    luredUntil: 0,
-    lure: { x: 690, y: 285 }
-  },
-  screenShake: createScreenShakeState(),
-  particles: []
-});
 
 let state = initialState();
 let lastRibbonDamageCueTime = 0;
@@ -178,7 +171,7 @@ function mutateGhost() {
 }
 
 function getNearbyInspectable() {
-  return findInspectableInRange(state.player, inspectables);
+  return findInspectableInRange(state.player, CASE_DATA[state.currentCaseId].inspectables);
 }
 
 function isNearWitness() {
@@ -186,7 +179,7 @@ function isNearWitness() {
 }
 
 function updateCasePhase() {
-  state.casePhase = getFirstCasePhase({
+  state.casePhase = getCasePhase(state.currentCaseId, {
     discoveredClueIds: state.discoveredClueIds,
     witnessMemoryState: state.witness.memoryState,
     doorOpen: state.doorOpen,
@@ -251,7 +244,8 @@ function inspectNearby() {
 function applyGhostCommand(word) {
   const result = getGhostCommandResult(word, {
     ghostActive: state.ghost.active,
-    doorOpen: state.doorOpen
+    doorOpen: state.doorOpen,
+    shieldActive: state.ghost.shielded
   });
 
   if (result.kind === 'none') return false;
@@ -272,7 +266,7 @@ function applyGhostCommand(word) {
 
   const g = state.ghost;
   dropRibbon(result.loss, result.command === 'BURN' ? 8 : 5);
-  audio.playCue(result.command.toLowerCase());
+  audio.playCue(result.command === 'ERASE' ? 'accept' : result.command.toLowerCase());
   triggerScreenShake(result.command === 'BURN' ? 7 : 4, 180);
 
   if (result.command === 'BURN') {
@@ -304,7 +298,31 @@ function applyGhostCommand(word) {
     burst(g.lure.x, g.lure.y, 20);
   }
 
+  if (result.command === 'ERASE' && state.currentCaseId === 'black-ribbon-press') {
+    g.shielded = false;
+    state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'ledger-erased');
+    updateCasePhase();
+  }
+
   return true;
+}
+
+function transitionToNextCase() {
+  const keys = Object.keys(CASE_DATA);
+  const currentIdx = keys.indexOf(state.currentCaseId);
+  const nextCaseId = keys[currentIdx + 1];
+
+  if (nextCaseId) {
+    state.message = 'The case is closed. Moving to the next lead...';
+    setTimeout(() => {
+      const hardboiled = state.hardboiled;
+      state = initialState(nextCaseId);
+      state.hardboiled = hardboiled;
+      audio.playCue('accept');
+    }, 2500);
+  } else {
+    state.message = 'The Black Ribbon Press mystery is solved. You are free... for now.';
+  }
 }
 
 function commitWord() {
@@ -315,10 +333,14 @@ function commitWord() {
   audio.playCue('commit');
 
   const trueNameAttempt = evaluateTrueNameAttempt(word, state.ghost.name);
+  const cd = CASE_DATA[state.currentCaseId];
 
   if (trueNameAttempt === 'exact' && state.ghost.active) {
-    if (!state.doorOpen) {
-      state.message = 'True Name blocked: Mallory hears it, but the door is sealed. ACCUSE Eddie, then type OPEN.';
+    const isBlocked = state.currentCaseId === 'mallory-vale' ? !state.doorOpen : state.ghost.shielded;
+    if (isBlocked) {
+      state.message = state.currentCaseId === 'mallory-vale'
+        ? 'True Name blocked: Mallory hears it, but the door is sealed. ACCUSE Eddie, then type OPEN.'
+        : 'True Name blocked: The Ink Shadow is shielded. Find a way to ERASE the ink.';
       audio.playCue('blocked');
       dropRibbon(ribbonLoss.gatedWord, 4);
       return;
@@ -327,10 +349,12 @@ function commitWord() {
     state.ghost.active = false;
     audio.playCue('trueNameBanish');
     audio.stopPressure();
-    state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'ending-lead');
-    state.message = 'True Name accepted. Mallory Vale points through the open door: Black Ribbon Press hired the killer.';
+    const endingClue = state.currentCaseId === 'mallory-vale' ? 'ending-lead' : 'harbor-lead';
+    state.discoveredClueIds = discoverClue(state.discoveredClueIds, endingClue);
+    state.message = `True Name accepted. ${state.currentCaseId === 'mallory-vale' ? 'Mallory Vale points to Black Ribbon Press.' : 'Victor Printer is released.'}`;
     updateCasePhase();
     burst(state.ghost.x, state.ghost.y, 42);
+    setTimeout(transitionToNextCase, 3000);
     return;
   }
 
@@ -347,30 +371,46 @@ function commitWord() {
     return;
   }
 
-  if (commands[word]) {
-    if (word === 'OPEN' && state.witness.memoryState !== 'cornered') {
+  const caseCommands = cd.commands;
+  const globalCommands = { OPEN: "The locked door swings open.", FORGET: "A witness loses a minute." };
+  const allCommands = { ...globalCommands, ...caseCommands };
+
+  if (allCommands[word]) {
+    if (word === 'OPEN' && state.currentCaseId === 'mallory-vale' && state.witness.memoryState !== 'cornered') {
       state.message = 'OPEN is blocked: Eddie still owns the missing confession. Stand by him and type ACCUSE first.';
       audio.playCue('blocked');
       dropRibbon(ribbonLoss.gatedWord, 4);
       return;
     }
 
-    state.message = `${word} is accepted. ${commands[word]}`;
+    if (word === 'REVEAL' && state.currentCaseId === 'black-ribbon-press' && !state.discoveredClueIds.includes('ledger')) {
+       state.message = 'REVEAL has nothing to show. Inspect the ink-stained ledger first.';
+       audio.playCue('blocked');
+       return;
+    }
+
+    state.message = `${word} is accepted. ${allCommands[word]}`;
     audio.playCue('accept');
     triggerScreenShake(7, 220);
     if (word === 'OPEN') {
       state.doorOpen = true;
       audio.playCue('doorOpen');
       state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'door-open');
-      updateCasePhase();
     }
+    if (word === 'REVEAL' && state.currentCaseId === 'black-ribbon-press') {
+       state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'ledger-revealed');
+       state.clueFound = true;
+    }
+    updateCasePhase();
     return;
   }
 
   audio.playCue('reject');
   dropRibbon(ribbonLoss.wrongWord, 7);
-  state.message = `${word} is rejected. Use clue words: REMEMBER, ACCUSE, OPEN, then MALLORY VALE.`;
+  const hint = state.currentCaseId === 'mallory-vale' ? 'REMEMBER, ACCUSE, OPEN' : 'REVEAL, GOSSIP, ERASE';
+  state.message = `${word} is rejected. Use clue words: ${hint}, then its True Name.`;
 }
+
 
 function burst(x, y, count) {
   for (let i = 0; i < count; i += 1) {
@@ -589,102 +629,144 @@ function drawPaperScratches(x, y, width, height, tint = 'rgba(5, 6, 7, 0.28)') {
 }
 
 function drawSceneObjects() {
-  const nearbyInspectable = getNearbyInspectable();
+    const nearbyInspectable = getNearbyInspectable();
+    const currentCase = state.currentCaseId;
 
-  drawAlleyDoor(nearbyInspectable?.id === 'door');
-  drawReceipt(nearbyInspectable?.id === 'receipt');
-  drawTypewriter(nearbyInspectable?.id === 'typewriter');
-  drawWitnessMarker(nearbyInspectable?.id === 'witness');
+    if (currentCase === 'mallory-vale') {
+      drawAlleyDoor(nearbyInspectable?.id === 'door');
+      drawReceipt(nearbyInspectable?.id === 'receipt');
+      drawTypewriter(nearbyInspectable?.id === 'typewriter');
+      drawWitnessMarker(nearbyInspectable?.id === 'witness');
+    } else if (currentCase === 'black-ribbon-press') {
+      drawLedger(nearbyInspectable?.id === 'ledger');
+      drawDevil(nearbyInspectable?.id === 'devil');
+      drawWitnessMarker(nearbyInspectable?.id === 'witness');
+    }
 
-  for (const inspectable of inspectables) {
-    const discovered = state.discoveredClueIds.includes(inspectable.id);
-    const isNearby = nearbyInspectable?.id === inspectable.id;
-    ctx.strokeStyle = isNearby ? noirPalette.ghost : (discovered ? 'rgba(242, 179, 95, 0.55)' : 'rgba(215, 199, 161, 0.2)');
-    ctx.lineWidth = isNearby ? 2 : 1;
-    ctx.beginPath();
-    ctx.arc(inspectable.x, inspectable.y, isNearby ? 18 : 12, 0, Math.PI * 2);
-    ctx.stroke();
+    const cd = CASE_DATA[currentCase];
+    for (const inspectable of cd.inspectables) {
+      const discovered = state.discoveredClueIds.includes(inspectable.id);
+      const isNearby = nearbyInspectable?.id === inspectable.id;
+      ctx.strokeStyle = isNearby ? noirPalette.ghost : (discovered ? 'rgba(242, 179, 95, 0.55)' : 'rgba(215, 199, 161, 0.2)');
+      ctx.lineWidth = isNearby ? 2 : 1;
+      ctx.beginPath();
+      ctx.arc(inspectable.x, inspectable.y, isNearby ? 18 : 12, 0, Math.PI * 2);
+      ctx.stroke();
 
-    if (isNearby) {
-      drawPixelText('Empty Enter: inspect', inspectable.x - 62, inspectable.y - 28, 14, noirPalette.ghost);
+      if (isNearby) {
+        drawPixelText('Empty Enter: inspect', inspectable.x - 62, inspectable.y - 28, 14, noirPalette.ghost);
+      }
+    }
+    ctx.lineWidth = 1;
+  }
+
+  function drawLedger(isNearby) {
+    drawGroundShadow(420, 360, 64, 0.45);
+    ctx.fillStyle = '#4a3a2a';
+    ctx.fillRect(380, 340, 80, 12);
+    ctx.fillStyle = noirPalette.paper;
+    ctx.fillRect(385, 305, 70, 45);
+
+    if (!state.discoveredClueIds.includes('ledger-erased')) {
+      ctx.fillStyle = noirPalette.ink;
+      ctx.beginPath();
+      ctx.arc(420, 325, 22, 0, Math.PI * 2);
+      ctx.fill();
+      drawPixelText('STAINED LEDGER', 370, 290, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
+    } else {
+      ctx.fillStyle = 'rgba(5, 6, 7, 0.65)';
+      ctx.font = '10px Georgia, serif';
+      ctx.fillText('VICTOR PRINTER', 390, 325);
+      drawPixelText('CLEARED LEDGER', 370, 290, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
     }
   }
-  ctx.lineWidth = 1;
-}
 
-function drawAlleyDoor(isNearby) {
-  drawGroundShadow(858, 388, 58, 0.58);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-  ctx.fillRect(820, 244, 76, 146);
-  ctx.fillStyle = state.doorOpen ? '#12291d' : noirPalette.wetBrick;
-  ctx.fillRect(830, 254, 56, 130);
-  ctx.strokeStyle = state.doorOpen ? 'rgba(140, 255, 193, 0.62)' : 'rgba(242, 179, 95, 0.42)';
-  ctx.lineWidth = 3;
-  ctx.strokeRect(830, 254, 56, 130);
-  ctx.lineWidth = 1;
-
-  ctx.fillStyle = state.doorOpen ? 'rgba(140, 255, 193, 0.18)' : 'rgba(0, 0, 0, 0.35)';
-  ctx.fillRect(839, 266, 38, 48);
-  ctx.strokeStyle = 'rgba(215, 199, 161, 0.22)';
-  for (let scratch = 0; scratch < 5; scratch += 1) {
+  function drawDevil(isNearby) {
+    ctx.strokeStyle = isNearby ? noirPalette.ghost : noirPalette.amber;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(846 + scratch * 6, 325);
-    ctx.lineTo(856 + scratch * 4, 354);
+    ctx.moveTo(110, 270);
+    ctx.lineTo(130, 290);
+    ctx.moveTo(130, 270);
+    ctx.lineTo(110, 290);
     ctx.stroke();
+    ctx.lineWidth = 1;
+    drawPixelText("PRINTER'S DEVIL", 80, 260, 13, isNearby ? noirPalette.ghost : noirPalette.amber);
   }
-  ctx.fillStyle = noirPalette.amber;
-  ctx.beginPath();
-  ctx.arc(876, 330, 4, 0, Math.PI * 2);
-  ctx.fill();
-  if (!state.doorOpen) {
-    ctx.strokeStyle = 'rgba(215, 199, 161, 0.52)';
-    ctx.strokeRect(849, 300, 18, 16);
-  }
-  drawPixelText(state.doorOpen ? 'OPEN ROOM' : 'LOCKED ALLEY', 796, 242, 14, isNearby ? noirPalette.ghost : noirPalette.amber);
-}
 
-function drawReceipt(isNearby) {
-  drawGroundShadow(396, 353, 56, 0.42);
-  ctx.fillStyle = '#5b3f24';
-  ctx.fillRect(346, 334, 96, 14);
-  ctx.fillStyle = 'rgba(242, 179, 95, 0.12)';
-  ctx.fillRect(356, 317, 72, 20);
-  ctx.save();
-  ctx.translate(396, 319);
-  ctx.rotate(-0.08);
-  ctx.fillStyle = noirPalette.paper;
-  ctx.fillRect(-24, -18, 48, 34);
-  ctx.fillStyle = 'rgba(157, 40, 50, 0.25)';
-  ctx.fillRect(-20, -14, 12, 8);
-  drawPaperScratches(-18, -10, 36, 24);
-  ctx.restore();
-  drawPixelText('fare receipt', 356, 298, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
-}
+  function drawAlleyDoor(isNearby) {
+    drawGroundShadow(858, 388, 58, 0.58);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(820, 244, 76, 146);
+    ctx.fillStyle = state.doorOpen ? '#12291d' : noirPalette.wetBrick;
+    ctx.fillRect(830, 254, 56, 130);
+    ctx.strokeStyle = state.doorOpen ? 'rgba(140, 255, 193, 0.62)' : 'rgba(242, 179, 95, 0.42)';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(830, 254, 56, 130);
+    ctx.lineWidth = 1;
 
-function drawTypewriter(isNearby) {
-  drawGroundShadow(146, 386, 72, 0.54);
-  ctx.fillStyle = '#2a1b15';
-  ctx.fillRect(90, 350, 112, 34);
-  ctx.fillStyle = '#0a0a0a';
-  ctx.fillRect(102, 340, 88, 18);
-  ctx.fillStyle = '#101010';
-  ctx.fillRect(116, 323, 58, 28);
-  ctx.fillStyle = 'rgba(215, 199, 161, 0.86)';
-  ctx.fillRect(124, 315, 44, 18);
-  drawPaperScratches(128, 319, 36, 12, 'rgba(5, 6, 7, 0.45)');
-  ctx.fillStyle = noirPalette.ink;
-  for (let key = 0; key < 8; key += 1) {
+    ctx.fillStyle = state.doorOpen ? 'rgba(140, 255, 193, 0.18)' : 'rgba(0, 0, 0, 0.35)';
+    ctx.fillRect(839, 266, 38, 48);
+    ctx.strokeStyle = 'rgba(215, 199, 161, 0.22)';
+    for (let scratch = 0; scratch < 5; scratch += 1) {
+      ctx.beginPath();
+      ctx.moveTo(846 + scratch * 6, 325);
+      ctx.lineTo(856 + scratch * 4, 354);
+      ctx.stroke();
+    }
+    ctx.fillStyle = noirPalette.amber;
     ctx.beginPath();
-    ctx.arc(111 + key * 10, 366 + (key % 2) * 6, 3, 0, Math.PI * 2);
+    ctx.arc(876, 330, 4, 0, Math.PI * 2);
     ctx.fill();
+    if (!state.doorOpen) {
+      ctx.strokeStyle = 'rgba(215, 199, 161, 0.52)';
+      ctx.strokeRect(849, 300, 18, 16);
+    }
+    drawPixelText(state.doorOpen ? 'OPEN ROOM' : 'LOCKED ALLEY', 796, 242, 14, isNearby ? noirPalette.ghost : noirPalette.amber);
   }
-  ctx.strokeStyle = 'rgba(140, 255, 193, 0.32)';
-  ctx.beginPath();
-  ctx.moveTo(146, 323);
-  ctx.lineTo(146, 294);
-  ctx.stroke();
-  drawPixelText('HAUNTED TYPEWRITER', 68, 304, 13, isNearby ? noirPalette.ghost : noirPalette.amber);
-}
+
+  function drawReceipt(isNearby) {
+    drawGroundShadow(396, 353, 56, 0.42);
+    ctx.fillStyle = '#5b3f24';
+    ctx.fillRect(346, 334, 96, 14);
+    ctx.fillStyle = 'rgba(242, 179, 95, 0.12)';
+    ctx.fillRect(356, 317, 72, 20);
+    ctx.save();
+    ctx.translate(396, 319);
+    ctx.rotate(-0.08);
+    ctx.fillStyle = noirPalette.paper;
+    ctx.fillRect(-24, -18, 48, 34);
+    ctx.fillStyle = 'rgba(157, 40, 50, 0.25)';
+    ctx.fillRect(-20, -14, 12, 8);
+    drawPaperScratches(-18, -10, 36, 24);
+    ctx.restore();
+    drawPixelText('fare receipt', 356, 298, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
+  }
+
+  function drawTypewriter(isNearby) {
+    drawGroundShadow(146, 386, 72, 0.54);
+    ctx.fillStyle = '#2a1b15';
+    ctx.fillRect(90, 350, 112, 34);
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(102, 340, 88, 18);
+    ctx.fillStyle = '#101010';
+    ctx.fillRect(116, 323, 58, 28);
+    ctx.fillStyle = 'rgba(215, 199, 161, 0.86)';
+    ctx.fillRect(124, 315, 44, 18);
+    drawPaperScratches(128, 319, 36, 12, 'rgba(5, 6, 7, 0.45)');
+    ctx.fillStyle = noirPalette.ink;
+    for (let key = 0; key < 8; key += 1) {
+      ctx.beginPath();
+      ctx.arc(111 + key * 10, 366 + (key % 2) * 6, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(140, 255, 193, 0.32)';
+    ctx.beginPath();
+    ctx.moveTo(146, 323);
+    ctx.lineTo(146, 294);
+    ctx.stroke();
+    drawPixelText('HAUNTED TYPEWRITER', 68, 304, 13, isNearby ? noirPalette.ghost : noirPalette.amber);
+  }
 
 function drawWitnessMarker(isNearby) {
   const color = isNearby ? 'rgba(140, 255, 193, 0.18)' : 'rgba(140, 255, 193, 0.08)';
