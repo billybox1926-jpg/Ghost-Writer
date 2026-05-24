@@ -57,6 +57,11 @@ canvas {
   image-rendering: pixelated;
 }
 
+canvas.hardboiled {
+  border-color: rgba(157, 40, 50, 0.78);
+  box-shadow: 0 0 0 2px rgba(242, 179, 95, 0.12), 0 0 30px rgba(157, 40, 50, 0.28);
+}
+
 .hud-help {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

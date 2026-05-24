@@ -3,7 +3,7 @@ import { getCaseObjective, getCasePhase, CASE_PHASES, CASE_REGISTRY } from '../s
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isCommandEntryKeyEvent, isEmptyLineShortcutEligible, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
-import { evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from '../src/semantic-rules.js';
+import { evaluateTrueNameAttempt, getGhostCommandResult, getHardboiledWitnessCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from '../src/semantic-rules.js';
 import { audioCueNames, getNextMuteState, getPressureIntensity } from '../src/audio-engine.js';
 
 const trueName = 'MALLORY VALE';
@@ -291,6 +291,32 @@ assert.deepEqual(
     message: 'ACCUSE is accepted. The witness breaks and gives up the secret word.'
   },
   'ACCUSE should connect Eddie to the door command and ending lead'
+);
+
+
+assert.deepEqual(
+  getHardboiledWitnessCommandResult('guarded', 'REMEMBER', { isInRange: true, currentCaseId: 'mallory-vale' }),
+  {
+    kind: 'changed',
+    memoryState: 'cornered',
+    label: 'HARD TRUTH',
+    loss: ribbonLoss.hardboiledWitnessShortcut,
+    journal: 'Hardboiled: REMEMBER cornered Eddie without a second draft.',
+    message: 'Hardboiled REMEMBER hits like a thrown chair. Eddie coughs up the door word in one take.'
+  },
+  'Hardboiled Mallory REMEMBER should shortcut Eddie to the door-word phase with a ribbon cost'
+);
+
+assert.equal(
+  getHardboiledWitnessCommandResult('guarded', 'REMEMBER', { isInRange: true, currentCaseId: 'black-ribbon-press' }).kind,
+  'none',
+  'Hardboiled witness shortcut should be scoped to Mallory Vale only'
+);
+
+assert.equal(
+  getHardboiledWitnessCommandResult('guarded', 'ACCUSE', { isInRange: true, currentCaseId: 'mallory-vale' }).kind,
+  'none',
+  'Hardboiled witness shortcut should only alter REMEMBER'
 );
 
 

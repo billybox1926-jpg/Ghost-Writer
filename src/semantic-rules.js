@@ -6,6 +6,7 @@ export const ribbonLoss = {
   wrongWord: 6,
   gatedWord: 2,
   witnessOutOfRange: 3,
+  hardboiledWitnessShortcut: 7,
   hardboiledBackspace: 2,
   trueNameMissBase: 8,
   trueNameMissPerMutation: 3,
@@ -44,6 +45,40 @@ export const ghostCommandRules = {
     journalFeedback: 'ERASE weakens the Ink Shadow, breaking its name-shield.'
   }
 };
+
+export function getHardboiledWitnessCommandResult(memoryState, command, { isInRange, currentCaseId }) {
+  const normalizedCommand = normalizeName(command);
+
+  if (currentCaseId !== 'mallory-vale' || normalizedCommand !== 'REMEMBER') return { kind: 'none', memoryState };
+
+  if (!isInRange) {
+    return {
+      kind: 'out-of-range',
+      memoryState,
+      loss: ribbonLoss.witnessOutOfRange,
+      message: 'Hardboiled REMEMBER dies in the rain. Eddie must be close enough to hear it.'
+    };
+  }
+
+  if (memoryState === 'cornered') {
+    return {
+      kind: 'unchanged',
+      memoryState: 'cornered',
+      label: 'HARD TRUTH',
+      journal: 'Hardboiled: REMEMBER cornered Eddie without a second draft.',
+      message: 'Hardboiled REMEMBER is already burned into Eddie. The door word is yours.'
+    };
+  }
+
+  return {
+    kind: 'changed',
+    memoryState: 'cornered',
+    label: 'HARD TRUTH',
+    loss: ribbonLoss.hardboiledWitnessShortcut,
+    journal: 'Hardboiled: REMEMBER cornered Eddie without a second draft.',
+    message: 'Hardboiled REMEMBER hits like a thrown chair. Eddie coughs up the door word in one take.'
+  };
+}
 
 export function getGhostCommandResult(command, { ghostActive, doorOpen, shieldActive }) {
   const normalizedCommand = normalizeName(command);

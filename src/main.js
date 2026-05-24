@@ -2,7 +2,7 @@ import { CASE_PHASES, getCaseObjective, getCasePhase } from './case-flow.js';
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from './clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from './screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isEmptyLineShortcutEligible, isModifiedShortcutEvent, isMovementCode, normalizeCommittedWord } from './input-rules.js';
-import { clamp, evaluateTrueNameAttempt, getGhostCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from './semantic-rules.js';
+import { clamp, evaluateTrueNameAttempt, getGhostCommandResult, getHardboiledWitnessCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from './semantic-rules.js';
 import { createAudioEngine, getPressureIntensity } from './audio-engine.js';
 
 const canvas = document.querySelector('#game');
@@ -188,7 +188,12 @@ function updateCasePhase() {
 }
 
 function applyWitnessCommand(word) {
-  const result = getWitnessCommandResult(state.witness.memoryState, word, isNearWitness());
+  const result = state.hardboiled
+    ? getHardboiledWitnessCommandResult(state.witness.memoryState, word, {
+      isInRange: isNearWitness(),
+      currentCaseId: state.currentCaseId
+    })
+    : getWitnessCommandResult(state.witness.memoryState, word, isNearWitness());
 
   if (result.kind === 'none') return false;
 
@@ -206,9 +211,10 @@ function applyWitnessCommand(word) {
   state.witness.lastJournal = result.journal;
 
   if (result.kind === 'changed') {
+    if (result.loss) dropRibbon(result.loss, 7);
     audio.playCue('accept');
     state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'witness');
-    if (result.memoryState === 'truthful') state.clueFound = true;
+    if (result.memoryState === 'truthful' || result.memoryState === 'cornered') state.clueFound = true;
     triggerScreenShake(6, 180);
     burst(state.witness.x, state.witness.y - 36, 18);
   } else {
@@ -1062,6 +1068,7 @@ window.addEventListener('keydown', (event) => {
 
     if (shortcutEligible) {
       state = initialState();
+      canvas.classList.remove('hardboiled');
       activeMovementCodes.clear();
       audio.stopPressure();
     }
@@ -1071,7 +1078,8 @@ window.addEventListener('keydown', (event) => {
   if (key === 'F2') {
     if (shortcutEligible) {
       state.hardboiled = !state.hardboiled;
-      state.message = state.hardboiled ? 'Hardboiled Mode on: Backspace is barred. Empty-line F2 toggles it off.' : 'Hardboiled Mode off: Backspace works again. Empty-line F2 toggles it.';
+      canvas.classList.toggle('hardboiled', state.hardboiled);
+      state.message = state.hardboiled ? 'Hardboiled Mode on: Backspace is barred. Near Eddie, REMEMBER forces the door word in one costly take.' : 'Hardboiled Mode off: Backspace works again. Empty-line F2 toggles it.';
       audio.playCue('commit');
     }
     return;
