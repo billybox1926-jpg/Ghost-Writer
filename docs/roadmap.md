@@ -7,8 +7,8 @@ This roadmap summarizes the current direction for the prototype.
 ## Completed foundation
 
 - Core no-dependency browser prototype built with plain HTML, CSS, JavaScript, and Canvas rendering.
-- First playable investigation slice for **Mallory Vale** with typing-led clue gathering, witness memory commands, door gating, semantic ghost commands, ribbon health, pressure, and True Name resolution.
-- Generated Web Audio feedback for typing, command outcomes, ribbon damage, pressure, door opening, and Mallory banishment.
+- Playable investigation flow for three connected noir-horror cases: **Mallory Vale**, **Black Ribbon Press**, and **Harbor of Ink** with typing-led clue gathering, witness memory commands, door gating, semantic ghost commands, ribbon health, pressure, and True Name resolution.
+- Generated Web Audio feedback for typing, command outcomes, ribbon damage, pressure, door opening, and banishment.
 - Current-run journal and accessibility/status text support for key clue and state changes.
 - Optional browser smoke coverage that skips cleanly when no supported browser is available.
 - Lightweight local verification commands for smoke, test, whitespace, syntax, and optional browser-smoke checks.

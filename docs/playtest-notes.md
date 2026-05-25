@@ -3,6 +3,10 @@
 _Date:_ 2026-05-18  
 _Scope:_ Current dependency-free Mallory Vale slice in plain HTML/CSS/JS. This pass intentionally did not add new gameplay content, scenes, ghosts, or puzzle systems.
 
+## Harbor of Ink Playtest (Issue #56)
+
+Playtesting for Harbor of Ink is currently pending. This requires a full end-to-end verification of the three-case flow (Mallory Vale → Black Ribbon Press → Harbor of Ink) including mistake paths: early `NORA QUILL`, early `CONFESS`, early `UNTIE/FERRY`, wrong words, Hardboiled Mode, audio, and restart.
+
 ## Environment status
 
 - Attempted to pull latest `main` before testing, but this checkout has no configured `origin` remote, so the pull could not be performed.

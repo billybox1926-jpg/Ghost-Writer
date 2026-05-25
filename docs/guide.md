@@ -4,24 +4,18 @@
 
 ## What this is (right now)
 
-Ghost Writer is currently a **prototype slice**: one compact case flow in a single Canvas scene, built with plain HTML/CSS/JS and no gameplay runtime dependencies.
+Ghost Writer is currently a **prototype slice**: three connected noir-horror cases in a single Canvas scene structure, built with plain HTML/CSS/JS and no gameplay runtime dependencies.
 
-It is not the full game yet. Human browser playtest coverage is also tracked separately in issue #33.
+It is not the full game yet. Human browser playtest coverage is also tracked separately in issue #56.
 
-## Quick setup and launch
+## How to play
 
-1. Clone this repository (or open your existing local copy).
-2. From the project root, run:
+The prototype consists of three connected cases: Mallory Vale, Black Ribbon Press, and Harbor of Ink.
 
-   ```bash
-   npm run smoke
-   npm test
-   npm run dev
-   ```
+Follow the narrative leads from case to case. Mallory Vale leads to the Black Ribbon Press, which points toward the harbor.
 
-3. Open the local/forwarded URL printed by the dev server (typically `http://localhost:8000`).
-
-If your environment forwards ports (Codespaces, remote containers, SSH tunnels), use that forwarded browser URL instead of localhost.
+### Deeper route note: Harbor of Ink
+The Harbor of Ink requires clues from the previous scene. Ensure the manifest is decoded before trying to `ANCHOR`. `CONFESS` requires the witness to be close and the manifest decoded. `UNTIE` and `FERRY` are gated until the dockworker confesses.
 
 ## Controls and input rules
 

@@ -19,7 +19,7 @@ Semantic combat is the core hook: words like `BURN`, `BIND`, and `LIE` affect gh
 
 ## Current prototype
 
-The current build is the Mallory Vale slice: one compact investigation scene designed to prove the typed-command, clue, witness, and True Name loop.
+The current build includes three connected noir-horror cases: Mallory Vale, Black Ribbon Press, and Harbor of Ink, designed to prove the typed-command, clue, witness, and True Name loop across a continuous narrative.
 
 It includes:
 

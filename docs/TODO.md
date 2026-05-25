@@ -29,7 +29,9 @@ The current build is close to a public prototype/playtest release. The remaining
 
 ## Current playable slice
 
-The Mallory Vale slice includes:
+The playable prototype currently consists of three connected cases: **Mallory Vale**, **Black Ribbon Press**, and **Harbor of Ink**.
+
+The slice includes:
 
 - typed command input
 - clue inspection
@@ -44,6 +46,9 @@ The Mallory Vale slice includes:
 - accessibility/status text updates
 - lightweight smoke and helper tests
 - optional browser-smoke verification
+
+## Playtest and polish status (Harbor of Ink)
+Harbor of Ink is implemented, but still requires end-to-end playtesting (#56) and visual polish (#58).
 
 ## Required Mallory Vale route
 
