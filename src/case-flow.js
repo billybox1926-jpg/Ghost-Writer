@@ -46,6 +46,28 @@ export const CASE_REGISTRY = {
       if (discoveredClueIds.includes('ledger')) return CASE_PHASES.INVESTIGATION;
       return CASE_PHASES.BEGINNING;
     }
+  },
+  'harbor-of-ink': {
+    title: 'Harbor of Ink',
+    phases: CASE_PHASES,
+    objectives: {
+      [CASE_PHASES.BEGINNING]: 'Case 3: Fog rolls off the docks. Inspect the shipping manifest.',
+      [CASE_PHASES.INVESTIGATION]: 'The dockworker looks suspicious. Stand near him and talk.',
+      [CASE_PHASES.READY]: 'Manifest decoded: type ANCHOR, then CONFESS near the witness.',
+      [CASE_PHASES.CONFRONTATION]: 'The shadow is exposed: type UNTIE or FERRY to banish it with its True Name.',
+      [CASE_PHASES.ENDING]: 'The harbor is quiet. You have survived.'
+    },
+    getPhase: ({ discoveredClueIds = [], witnessMemoryState = 'guarded', ghostActive = true }) => {
+      if (!ghostActive) return CASE_PHASES.ENDING;
+      const confessed = discoveredClueIds.includes('confessed');
+      const decoded = discoveredClueIds.includes('manifest-decoded');
+      const harborCleared = discoveredClueIds.includes('harbor-cleared');
+      if (harborCleared) return CASE_PHASES.CONFRONTATION;
+      if (confessed) return CASE_PHASES.READY;
+      if (decoded) return CASE_PHASES.INVESTIGATION;
+      if (discoveredClueIds.includes('manifest')) return CASE_PHASES.BEGINNING;
+      return CASE_PHASES.BEGINNING;
+    }
   }
 };
 

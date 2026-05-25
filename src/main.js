@@ -65,6 +65,31 @@ const CASE_DATA = {
     ghostStart: { x: 850, y: 280 },
     witnessStart: { x: 700, y: 340 },
     witnessName: 'THE APPRENTICE'
+  },
+  'harbor-of-ink': {
+    inspectables: [
+      { id: 'manifest', title: 'Shipping manifest', journal: 'Manifest: A list of cargo bound for the harbor. Needs ANCHOR.', message: 'A manifest of ink-stained goods. It mentions a shipment to Nora Quill. Type ANCHOR.', x: 120, y: 310, range: 58 },
+      { id: 'rope', title: 'Tarred rope', journal: 'Rope: Coiled and damp. Feels like it has held something heavy.', message: 'The tarred rope is slick with saltwater.', x: 750, y: 280, range: 50 },
+      { id: 'bell', title: 'Harbor bell', journal: 'Bell: A rusted warning, silenced by the fog.', message: 'The bell is cold. It tolls only for the lost.', x: 400, y: 250, range: 45 },
+      { id: 'witness', title: 'Dockworker witness', journal: 'Witness: The man knows why Nora is here. Type CONFESS.', message: "The dockworker avoids your gaze. Type CONFESS to hear the truth.", x: 600, y: 340, range: 65 }
+    ],
+    caseJournalEntries: [
+      { id: 'manifest-decoded', journal: 'Decoded: Nora Quill is the destination, not the sender.' },
+      { id: 'confessed', journal: 'Confessed: The dockworker admits Nora was pulled under at the pier.' },
+      { id: 'harbor-cleared', journal: 'Harbor cleared: the rope slackens, the ferry fog opens, and Nora can finally hear her name.' },
+      { id: 'ending', journal: 'Ending: Nora Quill slips free of the ink-black tide.' }
+    ],
+    commands: {
+      ANCHOR: 'The manifest reveals the name NORA QUILL.',
+      CONFESS: 'The dockworker mumbles: "Nora didn\'t leave, she was pulled under."',
+      UNTIE: 'The ropes fall away.',
+      FERRY: 'The waters churn.'
+    },
+    trueName: 'NORA QUILL',
+    initialPlayerPos: { x: 480, y: 340 },
+    ghostStart: { x: 200, y: 280 },
+    witnessStart: { x: 600, y: 340 },
+    witnessName: 'DOCKWORKER'
   }
 };
 
@@ -326,9 +351,12 @@ function transitionToNextCase() {
       state.hardboiled = hardboiled;
       audio.playCue('accept');
     }, 2500);
-  } else {
-    state.message = 'The Black Ribbon Press mystery is solved. You are free... for now.';
+    return;
   }
+
+  state.message = state.currentCaseId === 'harbor-of-ink'
+    ? 'The Harbor of Ink falls quiet. Nora Quill is free. For now, so are you.'
+    : 'The Black Ribbon Press mystery is solved. You are free... for now.';
 }
 
 function commitWord() {
@@ -342,11 +370,18 @@ function commitWord() {
   const cd = CASE_DATA[state.currentCaseId];
 
   if (trueNameAttempt === 'exact' && state.ghost.active) {
-    const isBlocked = state.currentCaseId === 'mallory-vale' ? !state.doorOpen : state.ghost.shielded;
+    const isBlocked = state.currentCaseId === 'mallory-vale'
+      ? !state.doorOpen
+      : state.currentCaseId === 'black-ribbon-press'
+        ? state.ghost.shielded
+        : !state.discoveredClueIds.includes('harbor-cleared');
+
     if (isBlocked) {
       state.message = state.currentCaseId === 'mallory-vale'
         ? 'True Name blocked: Mallory hears it, but the door is sealed. ACCUSE Eddie, then type OPEN.'
-        : 'True Name blocked: The Ink Shadow is shielded. Find a way to ERASE the ink.';
+        : state.currentCaseId === 'black-ribbon-press'
+          ? 'True Name blocked: The Ink Shadow is shielded. Find a way to ERASE the ink.'
+          : 'True Name blocked: the harbor is still tied shut. Make the dockworker CONFESS, then type UNTIE or FERRY.';
       audio.playCue('blocked');
       dropRibbon(ribbonLoss.gatedWord, 4);
       return;
@@ -355,9 +390,19 @@ function commitWord() {
     state.ghost.active = false;
     audio.playCue('trueNameBanish');
     audio.stopPressure();
-    const endingClue = state.currentCaseId === 'mallory-vale' ? 'ending-lead' : 'harbor-lead';
+
+    const endingClue = state.currentCaseId === 'mallory-vale'
+      ? 'ending-lead'
+      : state.currentCaseId === 'black-ribbon-press'
+        ? 'harbor-lead'
+        : 'ending';
+
     state.discoveredClueIds = discoverClue(state.discoveredClueIds, endingClue);
-    state.message = `True Name accepted. ${state.currentCaseId === 'mallory-vale' ? 'Mallory Vale points to Black Ribbon Press.' : 'Victor Printer is released.'}`;
+    state.message = `True Name accepted. ${state.currentCaseId === 'mallory-vale'
+      ? 'Mallory Vale points to Black Ribbon Press.'
+      : state.currentCaseId === 'black-ribbon-press'
+        ? 'Victor Printer is released.'
+        : 'Nora Quill is freed from the Harbor of Ink.'}`;
     updateCasePhase();
     burst(state.ghost.x, state.ghost.y, 42);
     setTimeout(transitionToNextCase, 3000);
@@ -395,6 +440,29 @@ function commitWord() {
        return;
     }
 
+    if (word === 'ANCHOR' && state.currentCaseId === 'harbor-of-ink' && !state.discoveredClueIds.includes('manifest')) {
+      state.message = 'ANCHOR is blocked: Need to read the manifest first.';
+      audio.playCue('blocked');
+      return;
+    }
+
+    if (word === 'CONFESS' && state.currentCaseId === 'harbor-of-ink') {
+      if (!state.discoveredClueIds.includes('manifest-decoded') || !isNearWitness()) {
+        state.message = !state.discoveredClueIds.includes('manifest-decoded')
+          ? 'CONFESS is blocked: Decode the manifest first.'
+          : 'CONFESS is blocked: The dockworker needs you to stand closer.';
+        audio.playCue('blocked');
+        return;
+      }
+      state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'confessed');
+    }
+
+    if ((word === 'UNTIE' || word === 'FERRY') && state.currentCaseId === 'harbor-of-ink' && !state.discoveredClueIds.includes('confessed')) {
+      state.message = `${word} is blocked: The dockworker hasn\'t confessed yet.`;
+      audio.playCue('blocked');
+      return;
+    }
+
     state.message = `${word} is accepted. ${allCommands[word]}`;
     audio.playCue('accept');
     triggerScreenShake(7, 220);
@@ -406,6 +474,12 @@ function commitWord() {
     if (word === 'REVEAL' && state.currentCaseId === 'black-ribbon-press') {
        state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'ledger-revealed');
        state.clueFound = true;
+    }
+    if (word === 'ANCHOR' && state.currentCaseId === 'harbor-of-ink') {
+      state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'manifest-decoded');
+    }
+    if ((word === 'UNTIE' || word === 'FERRY') && state.currentCaseId === 'harbor-of-ink') {
+      state.discoveredClueIds = discoverClue(state.discoveredClueIds, 'harbor-cleared');
     }
     updateCasePhase();
     return;
@@ -647,6 +721,11 @@ function drawSceneObjects() {
       drawLedger(nearbyInspectable?.id === 'ledger');
       drawDevil(nearbyInspectable?.id === 'devil');
       drawWitnessMarker(nearbyInspectable?.id === 'witness');
+    } else if (currentCase === 'harbor-of-ink') {
+      drawManifest(nearbyInspectable?.id === 'manifest');
+      drawRope(nearbyInspectable?.id === 'rope');
+      drawBell(nearbyInspectable?.id === 'bell');
+      drawWitnessMarker(nearbyInspectable?.id === 'witness');
     }
 
     const cd = CASE_DATA[currentCase];
@@ -774,6 +853,37 @@ function drawSceneObjects() {
     drawPixelText('HAUNTED TYPEWRITER', 68, 304, 13, isNearby ? noirPalette.ghost : noirPalette.amber);
   }
 
+  function drawManifest(isNearby) {
+    drawGroundShadow(120, 360, 48, 0.42);
+    ctx.fillStyle = noirPalette.paper;
+    ctx.fillRect(90, 300, 60, 20);
+    ctx.fillStyle = noirPalette.ink;
+    ctx.fillRect(95, 305, 50, 2);
+    ctx.fillRect(95, 310, 30, 2);
+    drawPixelText('MANIFEST', 90, 290, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
+  }
+
+  function drawRope(isNearby) {
+    drawGroundShadow(750, 300, 32, 0.42);
+    ctx.strokeStyle = '#4a3a2a';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(750, 280, 20, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    drawPixelText('ROPE', 730, 250, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
+  }
+
+  function drawBell(isNearby) {
+    drawGroundShadow(400, 280, 28, 0.42);
+    ctx.fillStyle = '#b87333';
+    ctx.beginPath();
+    ctx.arc(400, 250, 15, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(398, 250, 4, 10);
+    drawPixelText('BELL', 385, 220, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
+  }
+
 function drawWitnessMarker(isNearby) {
   const color = isNearby ? 'rgba(140, 255, 193, 0.18)' : 'rgba(140, 255, 193, 0.08)';
   ctx.fillStyle = color;
@@ -858,7 +968,7 @@ function drawWitness() {
   ctx.moveTo(w.x, w.y - 47);
   ctx.lineTo(w.x + 8, w.y - 2);
   ctx.stroke();
-  drawPixelText(`EDDIE: ${w.memoryLabel}`, w.x - 54, w.y + 22, 13, w.edited ? noirPalette.amber : noirPalette.paper);
+  drawPixelText(`${w.name}: ${w.memoryLabel}`, w.x - 54, w.y + 22, 13, w.edited ? noirPalette.amber : noirPalette.paper);
 
   if (isNearWitness()) {
     drawPixelText('type FORGET / REMEMBER / ACCUSE', w.x - 106, w.y - 76, 13, noirPalette.ghost);
