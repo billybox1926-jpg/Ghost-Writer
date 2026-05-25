@@ -5,6 +5,8 @@
 ![Dependencies](https://img.shields.io/badge/runtime%20dependencies-none-2f4636)
 ![Status](https://img.shields.io/badge/status-prototype-704214)
 
+**🔗 [Play in browser](https://billybox1926-jpg.github.io/Ghost-Writer/)**
+
 A horror-noir browser game prototype where a murdered journalist haunts a typewriter and fights ghosts with words.
 
 ## What it is
