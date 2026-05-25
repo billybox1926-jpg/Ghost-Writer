@@ -259,3 +259,34 @@ export function getWitnessCommandResult(memoryState, command, isInRange) {
     message: commandState.message
   };
 }
+
+export function getHarborCommandResult(command, { discoveredClueIds, isNearWitness }) {
+  const normalizedCommand = normalizeName(command);
+
+  if (normalizedCommand === 'ANCHOR') {
+    if (!discoveredClueIds.includes('manifest')) {
+      return { kind: 'blocked', message: 'ANCHOR is blocked: Need to read the manifest first.' };
+    }
+    return { kind: 'accepted', newClue: 'manifest-decoded' };
+  }
+
+  if (normalizedCommand === 'CONFESS') {
+    if (!discoveredClueIds.includes('manifest-decoded')) {
+      return { kind: 'blocked', message: 'CONFESS is blocked: Decode the manifest first.' };
+    }
+    if (!isNearWitness) {
+      return { kind: 'blocked', message: 'CONFESS is blocked: The dockworker needs you to stand closer.' };
+    }
+    return { kind: 'accepted', newClue: 'confessed' };
+  }
+
+  if (normalizedCommand === 'UNTIE' || normalizedCommand === 'FERRY') {
+    if (!discoveredClueIds.includes('confessed')) {
+      return { kind: 'blocked', message: `${normalizedCommand} is blocked: The dockworker hasn't confessed yet.` };
+    }
+    return { kind: 'accepted', newClue: 'harbor-cleared' };
+  }
+
+  return { kind: 'none' };
+}
+

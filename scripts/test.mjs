@@ -3,7 +3,7 @@ import { getCaseObjective, getCasePhase, CASE_PHASES, CASE_REGISTRY } from '../s
 import { discoverClue, findInspectableInRange, getDiscoveredClues } from '../src/clue-journal.js';
 import { createScreenShakeState, triggerScreenShakeState, updateScreenShakeState } from '../src/screen-shake.js';
 import { appendTypedCharacter, getMovementAxis, getTypeableCharacter, isCommandEntryKeyEvent, isEmptyLineShortcutEligible, isMovementCode, maxTypedCharacters, normalizeCommittedWord } from '../src/input-rules.js';
-import { evaluateTrueNameAttempt, getGhostCommandResult, getHardboiledWitnessCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss } from '../src/semantic-rules.js';
+import { evaluateTrueNameAttempt, getGhostCommandResult, getHardboiledWitnessCommandResult, getProximityPressure, getRibbonDrop, getWitnessCommandResult, ribbonLoss, getHarborCommandResult } from '../src/semantic-rules.js';
 import { audioCueNames, getNextMuteState, getPressureIntensity } from '../src/audio-engine.js';
 
 const trueName = 'MALLORY VALE';
@@ -513,6 +513,67 @@ assert.equal(
   getCasePhase('black-ribbon-press', { discoveredClueIds: ['ledger', 'ledger-revealed', 'ledger-erased'], ghostActive: true }),
   CASE_PHASES.CONFRONTATION,
   'erasing the shield should advance case 2 to confrontation'
+);
+
+assert.equal(
+  getCasePhase('harbor-of-ink', { discoveredClueIds: [], ghostActive: true }),
+  CASE_PHASES.BEGINNING,
+  'harbor of ink should start in beginning phase'
+);
+
+// Harbor of Ink progression tests
+assert.deepEqual(
+  getHarborCommandResult('ANCHOR', { discoveredClueIds: [], isNearWitness: false }),
+  { kind: 'blocked', message: 'ANCHOR is blocked: Need to read the manifest first.' },
+  'ANCHOR should be blocked if manifest is not discovered'
+);
+
+assert.deepEqual(
+  getHarborCommandResult('ANCHOR', { discoveredClueIds: ['manifest'], isNearWitness: false }),
+  { kind: 'accepted', newClue: 'manifest-decoded' },
+  'ANCHOR should be accepted if manifest is discovered'
+);
+
+assert.deepEqual(
+  getHarborCommandResult('CONFESS', { discoveredClueIds: ['manifest'], isNearWitness: true }),
+  { kind: 'blocked', message: 'CONFESS is blocked: Decode the manifest first.' },
+  'CONFESS should be blocked if manifest not yet decoded'
+);
+
+assert.deepEqual(
+  getHarborCommandResult('CONFESS', { discoveredClueIds: ['manifest-decoded'], isNearWitness: false }),
+  { kind: 'blocked', message: 'CONFESS is blocked: The dockworker needs you to stand closer.' },
+  'CONFESS should be blocked if witness is not in range'
+);
+
+assert.deepEqual(
+  getHarborCommandResult('CONFESS', { discoveredClueIds: ['manifest-decoded'], isNearWitness: true }),
+  { kind: 'accepted', newClue: 'confessed' },
+  'CONFESS should be accepted if decoded and in range'
+);
+
+assert.deepEqual(
+  getHarborCommandResult('UNTIE', { discoveredClueIds: [], isNearWitness: true }),
+  { kind: 'blocked', message: 'UNTIE is blocked: The dockworker hasn\'t confessed yet.' },
+  'UNTIE should be blocked if not confessed'
+);
+
+assert.deepEqual(
+  getHarborCommandResult('FERRY', { discoveredClueIds: [], isNearWitness: true }),
+  { kind: 'blocked', message: 'FERRY is blocked: The dockworker hasn\'t confessed yet.' },
+  'FERRY should be blocked if not confessed'
+);
+
+assert.deepEqual(
+  getHarborCommandResult('UNTIE', { discoveredClueIds: ['confessed'], isNearWitness: true }),
+  { kind: 'accepted', newClue: 'harbor-cleared' },
+  'UNTIE should be accepted if confessed'
+);
+
+assert.deepEqual(
+  getHarborCommandResult('FERRY', { discoveredClueIds: ['confessed'], isNearWitness: true }),
+  { kind: 'accepted', newClue: 'harbor-cleared' },
+  'FERRY should be accepted if confessed'
 );
 
 console.log('Semantic rules and clue journal tests passed. The True Name holds.');
