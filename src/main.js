@@ -857,10 +857,13 @@ function drawSceneObjects() {
     drawGroundShadow(120, 360, 48, 0.42);
     ctx.fillStyle = noirPalette.paper;
     ctx.fillRect(90, 300, 60, 20);
-    ctx.fillStyle = noirPalette.ink;
-    ctx.fillRect(95, 305, 50, 2);
-    ctx.fillRect(95, 310, 30, 2);
-    drawPixelText('MANIFEST', 90, 290, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
+    ctx.strokeStyle = noirPalette.deepInk;
+    ctx.beginPath();
+    ctx.moveTo(95, 305); ctx.lineTo(145, 305);
+    ctx.moveTo(95, 310); ctx.lineTo(125, 310);
+    ctx.moveTo(135, 300); ctx.lineTo(135, 320); // vertical fold line
+    ctx.stroke();
+    drawPixelText('MANIFEST', 85, 290, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
   }
 
   function drawRope(isNearby) {
@@ -868,20 +871,29 @@ function drawSceneObjects() {
     ctx.strokeStyle = '#4a3a2a';
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(750, 280, 20, 0, Math.PI * 2);
+    // Coil shape
+    ctx.arc(750, 280, 20, 0, Math.PI * 1.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(770, 280); ctx.lineTo(780, 270); // loose end
     ctx.stroke();
     ctx.lineWidth = 1;
-    drawPixelText('ROPE', 730, 250, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
+    drawPixelText('ROPE', 735, 250, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
   }
 
   function drawBell(isNearby) {
     drawGroundShadow(400, 280, 28, 0.42);
     ctx.fillStyle = '#b87333';
+    // Bell shape
     ctx.beginPath();
     ctx.arc(400, 250, 15, Math.PI, 0);
+    ctx.lineTo(415, 265); ctx.lineTo(385, 265);
+    ctx.closePath();
     ctx.fill();
-    ctx.fillRect(398, 250, 4, 10);
-    drawPixelText('BELL', 385, 220, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
+    ctx.fillRect(398, 240, 4, 10); // hanger
+    ctx.fillStyle = noirPalette.deepInk;
+    ctx.fillRect(398, 260, 4, 10); // clapper
+    drawPixelText('BELL', 388, 220, 13, isNearby ? noirPalette.ghost : noirPalette.paper);
   }
 
 function drawWitnessMarker(isNearby) {
